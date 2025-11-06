@@ -152,7 +152,23 @@ const DrawerManager = {
   addItem: function(companyName) {
     const row = document.createElement('div');
     row.style.cssText = `display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee;`;
-    row.innerHTML = `<div style="flex: 3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${companyName}</div><div style="flex: 1.5; text-align: center;">대기 중...</div><div style="flex: 2; text-align: center;"></div>`;
+    const nameCell = document.createElement('div');
+    nameCell.style.cssText = 'flex: 3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;';
+    nameCell.textContent = companyName;
+    const ratingCell = document.createElement('div');
+    ratingCell.style.cssText = 'flex: 1.5; text-align: center;';
+    ratingCell.textContent = '대기 중...';
+    const linkCell = document.createElement('div');
+    linkCell.style.cssText = 'flex: 2; text-align: center;';
+
+    // 리뷰 보기 버튼을 addItem 시점에 추가
+    const linkButton = document.createElement('button');
+    linkButton.textContent = '리뷰 보기';
+    linkButton.style.cssText = `color: #0077cc; text-decoration: underline; cursor: pointer; border: none; background: none; padding: 0;`;
+    linkButton.onclick = () => window.open(`https://www.teamblind.com/kr/company/${encodeURIComponent(extractCompanyName(companyName))}/reviews`, '_blank');
+    linkCell.appendChild(linkButton);
+
+    row.appendChild(nameCell); row.appendChild(ratingCell); row.appendChild(linkCell);
     this.list.appendChild(row);
     this.items.push({ name: companyName, rating: null, element: row });
   },
@@ -162,15 +178,8 @@ const DrawerManager = {
     if (!item) return;
     item.rating = rating;
     const ratingCell = item.element.children[1];
-    const linkCell = item.element.children[2];
+    // updateItem에서는 평점 셀만 업데이트
     ratingCell.innerHTML = (rating !== 'N/A') ? `<span style="color: #ffb400; font-weight: bold;">★ ${rating}</span>` : 'N/A';
-    if (linkCell.innerHTML === '') {
-      const linkButton = document.createElement('button');
-      linkButton.textContent = '리뷰 보기';
-      linkButton.style.cssText = `color: #0077cc; text-decoration: underline; cursor: pointer; border: none; background: none; padding: 0;`;
-      linkButton.onclick = () => window.open(`https://www.teamblind.com/kr/company/${encodeURIComponent(extractCompanyName(companyName))}/reviews`, '_blank');
-      linkCell.appendChild(linkButton);
-    }
   },
 
   updateSortIndicator: function() {
