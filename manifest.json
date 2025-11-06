@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Wanted + Blind Score",
+  "version": "1.0",
+  "description": "원티드 회사 목록에 블라인드 점수를 함께 표시합니다.",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": ["https://www.wanted.co.kr/*", "http://localhost:3000/*",  "https://www.teamblind.com/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://www.wanted.co.kr/*"],
+      "js": ["content.js"]
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup/popup.html"
+  }
+}
