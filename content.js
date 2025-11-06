@@ -266,7 +266,7 @@ const JobScanner = {
 
         if (taskQueue.length > 0) {
           // 큐에서 최대 3개의 작업을 가져옴
-          const batchToProcess = taskQueue.splice(0, 2);
+          const batchToProcess = taskQueue.splice(0, 1);
           
           const batchPromises = batchToProcess.map(name => 
             BlindAPI.fetchReview(extractCompanyName(name)).then(result => {
@@ -301,7 +301,7 @@ const JobScanner = {
 
     const producer = async () => {
       let lastHeight = 0, consecutiveNoChangeCount = 0;
-      const MAX_NO_CHANGE_ATTEMPTS = 3;
+      const MAX_NO_CHANGE_ATTEMPTS = 2;
       while (true) {
         while (this.isPaused) await sleep(1000);
         document.querySelectorAll('button[data-company-name]').forEach(button => {
@@ -315,7 +315,8 @@ const JobScanner = {
           }
         });
         window.scrollTo(0, document.body.scrollHeight);
-        await sleep(2000);
+        await sleep(1000);
+
         const newHeight = document.body.scrollHeight;
         if (newHeight === lastHeight) {
           consecutiveNoChangeCount++;
