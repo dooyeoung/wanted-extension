@@ -12,6 +12,13 @@ function extractCompanyName(text) {
   return text.replace(/\s*\(.*?\)/g, '');
 }
 
+function getRatingColor(rating) {
+  const numericRating = parseFloat(rating);
+  if (numericRating >= 4.0) return 'red';
+  if (numericRating >= 3.0) return 'orange';
+  return 'gray';
+}
+
 // --- API 모듈 ---
 const BlindAPI = {
   parseRating: function(html) {
@@ -48,7 +55,8 @@ const UIManager = {
     scoreDiv.className = 'blind-score';
     scoreDiv.style.cssText = `padding-left: 4px; padding-top: 4px; font-size: 0.8125rem; font-weight: 500; display: flex; align-items: center;`;
     const ratingSpan = document.createElement('span');
-    ratingSpan.style.cssText = `color: #ffb400; margin-right: 4px;`;
+    const color = getRatingColor(rating);
+    ratingSpan.style.cssText = `color: ${color}; margin-right: 4px;`;
     ratingSpan.textContent = `★ ${rating}`;
     scoreDiv.appendChild(ratingSpan);
     const linkButton = document.createElement('button');
@@ -185,7 +193,12 @@ const DrawerManager = {
     item.rating = rating;
     const ratingCell = item.element.children[1];
     // updateItem에서는 평점 셀만 업데이트
-    ratingCell.innerHTML = (rating !== 'N/A') ? `<span style="color: #ffb400; font-weight: bold;">★ ${rating}</span>` : 'N/A';
+    if (rating !== 'N/A') {
+      const color = getRatingColor(rating);
+      ratingCell.innerHTML = `<span style="color: ${color}; font-weight: bold;">★ ${rating}</span>`;
+    } else {
+      ratingCell.innerHTML = 'N/A';
+    }
   },
 
   updateSortIndicator: function() {
@@ -273,7 +286,7 @@ const JobScanner = {
               const { rating } = result;
               DrawerManager.updateItem(name, rating);
               if (rating !== 'N/A') {
-                document.querySelectorAll('button[data-company-name]').forEach(button => {
+                document.querySelectorAll(`button[data-company-name="${name}"]`).forEach(button => {
                   const container = button.parentElement.parentElement;
                   UIManager.injectRating(container, rating, name);
                 });
@@ -310,7 +323,7 @@ const JobScanner = {
           }
         });
         window.scrollTo(0, document.body.scrollHeight);
-        await sleep(1000);
+        await sleep(200);
         const newHeight = document.body.scrollHeight;
         if (newHeight === lastHeight) {
           consecutiveNoChangeCount++;
