@@ -107,6 +107,10 @@ const DrawerManager = {
     this.drawer.appendChild(this.list);
     this.drawer.appendChild(footer);
     document.body.appendChild(this.drawer);
+
+    this.drawer.querySelector('#sort-by-name').onclick = () => this.sortItems('name');
+    this.drawer.querySelector('#sort-by-rating').onclick = () => this.sortItems('rating');
+
     this.createOpenButton();
   },
 
@@ -135,9 +139,11 @@ const DrawerManager = {
     const statusText = this.formatStatusText(this.latestStatus);
     const statusColor = this.latestStatus.color || 'blue';
     if (this.drawer.style.display === 'none') {
+      this.openButton.style.display = 'block';
       this.openButton.textContent = `결과 보기 (${statusText})`;
       this.statusElement.textContent = '';
     } else {
+      this.openButton.style.display = 'none';
       this.openButton.textContent = '결과 보기';
       this.statusElement.textContent = statusText;
       this.statusElement.style.color = statusColor;
@@ -206,7 +212,7 @@ const DrawerManager = {
       if (this.sortState.key === 'rating') {
         const ratingA = (a.rating && a.rating !== 'N/A') ? parseFloat(a.rating) : -1;
         const ratingB = (b.rating && b.rating !== 'N/A') ? parseFloat(b.rating) : -1;
-        return (ratingA - ratingB) * dir * -1;
+        return (ratingA - ratingB) * dir;
       } else {
         return a.name.localeCompare(b.name) * dir;
       }
