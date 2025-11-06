@@ -232,16 +232,16 @@ const JobScanner = {
 
     const consumer = async () => {
       while (!producerDone || taskQueue.length > 0) {
-        while (this.isPaused) await sleep(1000);
+        while (this.isPaused) await sleep(500);
         if (taskQueue.length > 0) {
           const name = taskQueue.shift();
           const { rating } = await BlindAPI.fetchReview(name);
           DrawerManager.updateItem(name, rating);
           this.completedCompanies++;
           DrawerManager.updateStatus({ type: 'progress', completed: this.completedCompanies, total: this.totalCompanies });
-          await sleep(300);
+          await sleep(50);
         } else {
-          await sleep(500);
+          await sleep(100);
         }
       }
       DrawerManager.updateStatus({ text: '수집 완료', color: 'green' });
@@ -254,7 +254,7 @@ const JobScanner = {
       let lastHeight = 0, consecutiveNoChangeCount = 0;
       const MAX_NO_CHANGE_ATTEMPTS = 3;
       while (true) {
-        while (this.isPaused) await sleep(1000);
+        while (this.isPaused) await sleep(500);
         document.querySelectorAll('button[data-company-name]').forEach(button => {
           const name = extractCompanyName(button.getAttribute('data-company-name')).trim();
           if (name && !companyNames.has(name)) {
@@ -266,7 +266,7 @@ const JobScanner = {
           }
         });
         window.scrollTo(0, document.body.scrollHeight);
-        await sleep(2000);
+        await sleep(700);
         const newHeight = document.body.scrollHeight;
         if (newHeight === lastHeight) {
           consecutiveNoChangeCount++;

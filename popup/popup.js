@@ -1,7 +1,3 @@
-document.getElementById('autoDisplay').addEventListener('change', e => {
-  chrome.storage.sync.set({ autoDisplay: e.target.checked });
-});
-
 document.getElementById('start-scan').addEventListener('click', () => {
   console.log('Popup: Start Scan button clicked. Sending message...');
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
