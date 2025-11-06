@@ -5,7 +5,7 @@ document.getElementById('start-scan').addEventListener('click', () => {
       console.error('Popup: No active tab found.');
       return;
     }
-    chrome.tabs.sendMessage(tabs[0].id, { type: 'START_COLLECTING' });
+    chrome.tabs.sendMessage(tabs[0].id, { type: 'SHOW_DRAWER' });
     window.close(); // 팝업 닫기
   });
 });

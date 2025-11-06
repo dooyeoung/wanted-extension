@@ -9,7 +9,7 @@ function sleep(ms) {
 }
 
 function extractCompanyName(text) {
-  return text.replace(/\s*\(.*?\)/g, '').trim();
+  return text.replace(/\s*\(.*?\)/g, '');
 }
 
 // --- API 모듈 ---
@@ -43,30 +43,22 @@ const BlindAPI = {
 // --- UI 렌더링 모듈 (페이지 내 별점 표시) ---
 const UIManager = {
   injectRating: function(element, rating, companyName) {
-    // 이미 추가된 별점이 있으면 업데이트하지 않음
     if (element.querySelector('.blind-score')) return;
     const scoreDiv = document.createElement('div');
     scoreDiv.className = 'blind-score';
     scoreDiv.style.cssText = `padding-left: 4px; padding-top: 4px; font-size: 0.8125rem; font-weight: 500; display: flex; align-items: center;`;
-
     const ratingSpan = document.createElement('span');
     ratingSpan.style.cssText = `color: #ffb400; margin-right: 4px;`;
     ratingSpan.textContent = `★ ${rating}`;
     scoreDiv.appendChild(ratingSpan);
-
     const linkButton = document.createElement('button');
     linkButton.textContent = '리뷰 보기';
-    linkButton.style.cssText = `
-      color: #0077cc; text-decoration: underline; cursor: pointer; border: none; background: none; padding: 0;
-      font-size: 1em; /* 부모 폰트 사이즈에 맞춤 */
-    `;
+    linkButton.style.cssText = `color: #0077cc; text-decoration: underline; cursor: pointer; border: none; background: none; padding: 0; font-size: 1em;`;
     linkButton.onclick = (e) => {
-      e.stopPropagation(); // 부모 요소의 클릭 이벤트 방지
-      e.preventDefault(); // 기본 링크 동작 방지
+      e.stopPropagation(); e.preventDefault();
       window.open(`https://www.teamblind.com/kr/company/${encodeURIComponent(extractCompanyName(companyName))}/reviews`, '_blank');
     };
     scoreDiv.appendChild(linkButton);
-
     element.append(scoreDiv);
   }
 };
@@ -87,16 +79,14 @@ const DrawerManager = {
     this.drawer.id = 'blind-rating-drawer';
     this.drawer.style.cssText = `position: fixed; top: 0; right: 0; width: 380px; height: 100%; background-color: white; border-left: 1px solid #e0e0e0; box-shadow: -2px 0 5px rgba(0,0,0,0.1); z-index: 9999; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box;`;
     const header = document.createElement('div');
-    header.style.cssText = 'flex-shrink: 0;';
+    header.style.cssText = 'flex-shrink: 0; height: 60px;';
     const title = document.createElement('span');
     title.textContent = '블라인드 평점 수집';
     title.style.margin = '0 0 10px 0';
     header.appendChild(title);
     const tableHeader = document.createElement('div');
-    tableHeader.style.cssText = `height: 60px; display: flex; font-weight: bold; padding: 5px 0; border-bottom: 1px solid #ccc; flex-shrink: 0; user-select: none;`;
+    tableHeader.style.cssText = `display: flex; padding: 5px 0; border-bottom: 1px solid #ccc; flex-shrink: 0; user-select: none;`;
     tableHeader.innerHTML = `<div id="sort-by-name" style="flex: 3; cursor: pointer;">회사명</div><div id="sort-by-rating" style="flex: 1.5; text-align: center; cursor: pointer;">평점</div><div style="flex: 2; text-align: center;">바로가기</div>`;
-    tableHeader.querySelector('#sort-by-name').onclick = () => this.sortItems('name');
-    tableHeader.querySelector('#sort-by-rating').onclick = () => this.sortItems('rating');
     header.appendChild(tableHeader);
     this.list = document.createElement('div');
     this.list.style.cssText = `overflow-y: auto; flex-grow: 1;`;
@@ -104,7 +94,12 @@ const DrawerManager = {
     footer.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-top: 10px; flex-shrink: 0;';
     this.statusElement = document.createElement('span');
     const buttonGroup = document.createElement('div');
-    buttonGroup.innerHTML = `<button id="pause-scan" title="수집 정지" style="padding: 5px 10px; font-size: 0.9em;">수집 정지</button><button id="resume-scan" title="다시 시작" style="display: none; padding: 5px 10px; font-size: 0.9em;">다시 시작</button><button id="close-drawer" title="닫기">X</button>`;
+    buttonGroup.innerHTML = `
+      <button id="start-scan-in-drawer" style="padding: 5px 10px; font-size: 0.9em;">수집 시작</button>
+      <button id="pause-scan" title="수집 정지" style="padding: 5px 10px; font-size: 0.9em; display: none;">수집 정지</button>
+      <button id="resume-scan" title="다시 시작" style="padding: 5px 10px; font-size: 0.9em; display: none;">다시 시작</button>
+      <button id="close-drawer" title="닫기">X</button>
+    `;
     buttonGroup.querySelectorAll('button').forEach(btn => btn.style.marginLeft = '5px');
     footer.appendChild(this.statusElement);
     footer.appendChild(buttonGroup);
@@ -113,7 +108,6 @@ const DrawerManager = {
     this.drawer.appendChild(footer);
     document.body.appendChild(this.drawer);
     this.createOpenButton();
-    if(this.openButton) this.openButton.style.display = 'block';
   },
 
   createOpenButton: function() {
@@ -138,10 +132,8 @@ const DrawerManager = {
 
   updateButtonAndStatusDisplay: function() {
     if (!this.drawer || !this.openButton) return;
-
     const statusText = this.formatStatusText(this.latestStatus);
     const statusColor = this.latestStatus.color || 'blue';
-
     if (this.drawer.style.display === 'none') {
       this.openButton.textContent = `결과 보기 (${statusText})`;
       this.statusElement.textContent = '';
@@ -182,6 +174,7 @@ const DrawerManager = {
   },
 
   updateSortIndicator: function() {
+    if (!this.drawer) return; // 오류 방지 가드 추가
     const nameHeader = this.drawer.querySelector('#sort-by-name');
     const ratingHeader = this.drawer.querySelector('#sort-by-rating');
     nameHeader.textContent = '회사명';
@@ -204,7 +197,7 @@ const DrawerManager = {
       if (this.sortState.key === 'rating') {
         const ratingA = (a.rating && a.rating !== 'N/A') ? parseFloat(a.rating) : -1;
         const ratingB = (b.rating && b.rating !== 'N/A') ? parseFloat(b.rating) : -1;
-        return (ratingA - ratingB) * dir * -1; // 내림차순 기본
+        return (ratingA - ratingB) * dir * -1;
       } else {
         return a.name.localeCompare(b.name) * dir;
       }
@@ -218,6 +211,7 @@ const DrawerManager = {
     if (this.list) this.list.innerHTML = '';
     this.items = [];
     this.sortState = { key: null, direction: 'desc' };
+    this.updateSortIndicator();
   }
 };
 
@@ -242,19 +236,12 @@ const JobScanner = {
   startFullScan: async function() {
     if (this.isScanning) return;
     this.isScanning = true; this.isPaused = false; this.totalCompanies = 0; this.completedCompanies = 0;
-
-    DrawerManager.create();
-    DrawerManager.clear();
+    
     DrawerManager.updateStatus({ type: 'progress', completed: 0, total: 0 });
 
-    document.getElementById('pause-scan').onclick = () => this.pause();
-    document.getElementById('resume-scan').onclick = () => this.resume();
-    document.getElementById('close-drawer').onclick = () => {
-      DrawerManager.drawer.style.display = 'none';
-      DrawerManager.updateButtonAndStatusDisplay();
-    };
-    document.getElementById('resume-scan').style.display = 'none';
+    document.getElementById('start-scan-in-drawer').style.display = 'none';
     document.getElementById('pause-scan').style.display = 'inline-block';
+    document.getElementById('resume-scan').style.display = 'none';
 
     const companyNames = new Set();
     const taskQueue = [];
@@ -265,13 +252,10 @@ const JobScanner = {
         while (this.isPaused) await sleep(1000);
 
         if (taskQueue.length > 0) {
-          // 큐에서 최대 3개의 작업을 가져옴
           const batchToProcess = taskQueue.splice(0, 1);
-          
           const batchPromises = batchToProcess.map(name => 
             BlindAPI.fetchReview(extractCompanyName(name)).then(result => {
               const { rating } = result;
-              
               DrawerManager.updateItem(name, rating);
               if (rating !== 'N/A') {
                 document.querySelectorAll('button[data-company-name]').forEach(button => {
@@ -279,16 +263,12 @@ const JobScanner = {
                   UIManager.injectRating(container, rating, name);
                 });
               }
-
               this.completedCompanies++;
               DrawerManager.updateStatus({ type: 'progress', completed: this.completedCompanies, total: this.totalCompanies });
             })
           );
-
-          // 현재 배치(2개)의 작업이 모두 완료될 때까지 기다림
           await Promise.all(batchPromises);
-          await sleep(100); // 각 배치 작업 후 지연
-
+          await sleep(100);
         } else {
           await sleep(500);
         }
@@ -301,7 +281,7 @@ const JobScanner = {
 
     const producer = async () => {
       let lastHeight = 0, consecutiveNoChangeCount = 0;
-      const MAX_NO_CHANGE_ATTEMPTS = 2;
+      const MAX_NO_CHANGE_ATTEMPTS = 3;
       while (true) {
         while (this.isPaused) await sleep(1000);
         document.querySelectorAll('button[data-company-name]').forEach(button => {
@@ -316,7 +296,6 @@ const JobScanner = {
         });
         window.scrollTo(0, document.body.scrollHeight);
         await sleep(1000);
-
         const newHeight = document.body.scrollHeight;
         if (newHeight === lastHeight) {
           consecutiveNoChangeCount++;
@@ -335,8 +314,22 @@ const JobScanner = {
 
   init: function() {
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-      if (request.type === 'START_COLLECTING') {
-        this.startFullScan();
+      if (request.type === 'SHOW_DRAWER') {
+        DrawerManager.create();
+        DrawerManager.clear();
+        DrawerManager.updateStatus({ text: '대기 중', color: 'gray'});
+         // 버튼 이벤트 핸들러 설정
+        document.getElementById('start-scan-in-drawer').onclick = () => this.startFullScan();
+        document.getElementById('pause-scan').onclick = () => this.pause();
+        document.getElementById('resume-scan').onclick = () => this.resume();
+        document.getElementById('close-drawer').onclick = () => {
+          DrawerManager.drawer.style.display = 'none';
+          DrawerManager.updateButtonAndStatusDisplay();
+        };
+        // 초기 버튼 상태 설정
+        document.getElementById('start-scan-in-drawer').style.display = 'inline-block';
+        document.getElementById('pause-scan').style.display = 'none';
+        document.getElementById('resume-scan').style.display = 'none';
       }
     });
   }
