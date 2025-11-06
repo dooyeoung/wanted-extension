@@ -9,7 +9,7 @@ function sleep(ms) {
 }
 
 function extractCompanyName(text) {
-  return text.replace(/\s*\(.*?\)/g, '');
+  return text.replace(/\s*\(.*?\)/g, '').trim();
 }
 
 // --- API 모듈 ---
@@ -43,19 +43,38 @@ const BlindAPI = {
 // --- UI 렌더링 모듈 (페이지 내 별점 표시) ---
 const UIManager = {
   injectRating: function(element, rating, companyName) {
+    // 이미 추가된 별점이 있으면 업데이트하지 않음
     if (element.querySelector('.blind-score')) return;
-    const scoreSpan = document.createElement('div');
-    scoreSpan.className = 'blind-score';
-    scoreSpan.style.cssText = `padding-left: 4px; padding-top: 4px; color: #ffb400; font-size: 0.8125rem; font-weight: 500;`;
-    scoreSpan.textContent = `★ ${rating}`;
-    element.append(scoreSpan);
+    const scoreDiv = document.createElement('div');
+    scoreDiv.className = 'blind-score';
+    scoreDiv.style.cssText = `padding-left: 4px; padding-top: 4px; font-size: 0.8125rem; font-weight: 500; display: flex; align-items: center;`;
+
+    const ratingSpan = document.createElement('span');
+    ratingSpan.style.cssText = `color: #ffb400; margin-right: 4px;`;
+    ratingSpan.textContent = `★ ${rating}`;
+    scoreDiv.appendChild(ratingSpan);
+
+    const linkButton = document.createElement('button');
+    linkButton.textContent = '리뷰 보기';
+    linkButton.style.cssText = `
+      color: #0077cc; text-decoration: underline; cursor: pointer; border: none; background: none; padding: 0;
+      font-size: 1em; /* 부모 폰트 사이즈에 맞춤 */
+    `;
+    linkButton.onclick = (e) => {
+      e.stopPropagation(); // 부모 요소의 클릭 이벤트 방지
+      e.preventDefault(); // 기본 링크 동작 방지
+      window.open(`https://www.teamblind.com/kr/company/${encodeURIComponent(companyName)}/reviews`, '_blank');
+    };
+    scoreDiv.appendChild(linkButton);
+
+    element.append(scoreDiv);
   }
 };
 
 // --- Drawer UI 관리 모듈 ---
 const DrawerManager = {
   drawer: null, list: null, openButton: null, statusElement: null, items: [],
-  sortState: { key: null, direction: 'desc' }, // 정렬 상태 관리
+  sortState: { key: null, direction: 'desc' },
 
   create: function() {
     if (this.drawer) {
@@ -64,42 +83,43 @@ const DrawerManager = {
       return;
     }
 
-    // --- Drawer 본체 ---
     this.drawer = document.createElement('div');
     this.drawer.id = 'blind-rating-drawer';
     this.drawer.style.cssText = `position: fixed; top: 0; right: 0; width: 380px; height: 100%; background-color: white; border-left: 1px solid #e0e0e0; box-shadow: -2px 0 5px rgba(0,0,0,0.1); z-index: 9999; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box;`;
 
     // --- 헤더 ---
     const header = document.createElement('div');
-    header.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-shrink: 0;';
+    header.style.cssText = 'flex-shrink: 0;';
     const title = document.createElement('h3');
     title.textContent = '블라인드 평점 수집';
-    title.style.margin = '0';
-    this.statusElement = document.createElement('span');
-    this.statusElement.style.marginLeft = '10px';
-    const titleGroup = document.createElement('div');
-    titleGroup.style.cssText = 'display: flex; align-items: center;';
-    titleGroup.appendChild(title); titleGroup.appendChild(this.statusElement);
-    const buttonGroup = document.createElement('div');
-    buttonGroup.innerHTML = `<button id="pause-scan" title="일시 정지">❚❚</button><button id="resume-scan" title="다시 시작" style="display: none;">▶</button><button id="close-drawer" title="닫기">X</button>`;
-    buttonGroup.querySelectorAll('button').forEach(btn => btn.style.marginLeft = '5px');
-    header.appendChild(titleGroup); header.appendChild(buttonGroup);
+    title.style.margin = '0 0 10px 0';
+    header.appendChild(title);
 
-    // --- 테이블 헤더 (정렬 기능 추가) ---
+    // --- 테이블 헤더 (정렬 기능) ---
     const tableHeader = document.createElement('div');
     tableHeader.style.cssText = `display: flex; font-weight: bold; padding: 5px 0; border-bottom: 1px solid #ccc; flex-shrink: 0; user-select: none;`;
-    tableHeader.innerHTML = `
-      <div id="sort-by-name" style="flex: 3; cursor: pointer;">회사명</div>
-      <div id="sort-by-rating" style="flex: 1.5; text-align: center; cursor: pointer;">평점</div>
-      <div style="flex: 2; text-align: center;">바로가기</div>
-    `;
+    tableHeader.innerHTML = `<div id="sort-by-name" style="flex: 3; cursor: pointer;">회사명</div><div id="sort-by-rating" style="flex: 1.5; text-align: center; cursor: pointer;">평점</div><div style="flex: 2; text-align: center;">바로가기</div>`;
     tableHeader.querySelector('#sort-by-name').onclick = () => this.sortItems('name');
     tableHeader.querySelector('#sort-by-rating').onclick = () => this.sortItems('rating');
+    header.appendChild(tableHeader);
 
+    // --- 목록 컨테이너 ---
     this.list = document.createElement('div');
     this.list.style.cssText = `overflow-y: auto; flex-grow: 1;`;
 
-    this.drawer.appendChild(header); this.drawer.appendChild(tableHeader); this.drawer.appendChild(this.list);
+    // --- 푸터 (상태 및 컨트롤) ---
+    const footer = document.createElement('div');
+    footer.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-top: 10px; flex-shrink: 0;';
+    this.statusElement = document.createElement('span');
+    const buttonGroup = document.createElement('div');
+    buttonGroup.innerHTML = `<button id="pause-scan" title="수집 정지" style="padding: 5px 10px; font-size: 0.9em;">수집 정지</button><button id="resume-scan" title="다시 시작" style="display: none; padding: 5px 10px; font-size: 0.9em;">다시 시작</button><button id="close-drawer" title="닫기">X</button>`;
+    buttonGroup.querySelectorAll('button').forEach(btn => btn.style.marginLeft = '5px');
+    footer.appendChild(this.statusElement);
+    footer.appendChild(buttonGroup);
+
+    this.drawer.appendChild(header); 
+    this.drawer.appendChild(this.list);
+    this.drawer.appendChild(footer);
     document.body.appendChild(this.drawer);
     this.createOpenButton();
     if(this.openButton) this.openButton.style.display = 'block';
@@ -157,7 +177,7 @@ const DrawerManager = {
     const ratingHeader = this.drawer.querySelector('#sort-by-rating');
     nameHeader.textContent = '회사명';
     ratingHeader.textContent = '평점';
-
+    if (!this.sortState.key) return;
     const targetHeader = this.sortState.key === 'name' ? nameHeader : ratingHeader;
     const arrow = this.sortState.direction === 'asc' ? ' ▲' : ' ▼';
     targetHeader.textContent += arrow;
@@ -170,18 +190,16 @@ const DrawerManager = {
       this.sortState.key = key;
       this.sortState.direction = key === 'rating' ? 'desc' : 'asc';
     }
-
     this.items.sort((a, b) => {
       const dir = this.sortState.direction === 'asc' ? 1 : -1;
       if (this.sortState.key === 'rating') {
         const ratingA = (a.rating && a.rating !== 'N/A') ? parseFloat(a.rating) : -1;
         const ratingB = (b.rating && b.rating !== 'N/A') ? parseFloat(b.rating) : -1;
-        return (ratingB - ratingA) * dir;
-      } else { // name
+        return (ratingA - ratingB) * dir * -1; // 내림차순 기본
+      } else {
         return a.name.localeCompare(b.name) * dir;
       }
     });
-
     this.list.innerHTML = '';
     this.items.forEach(item => this.list.appendChild(item.element));
     this.updateSortIndicator();
@@ -232,16 +250,26 @@ const JobScanner = {
 
     const consumer = async () => {
       while (!producerDone || taskQueue.length > 0) {
-        while (this.isPaused) await sleep(500);
+        
+        while (this.isPaused) await sleep(1000);
+
         if (taskQueue.length > 0) {
           const name = taskQueue.shift();
-          const { rating } = await BlindAPI.fetchReview(name);
+          const { rating } = await BlindAPI.fetchReview(extractCompanyName(name));
+          
           DrawerManager.updateItem(name, rating);
+          if (rating !== 'N/A') {
+            document.querySelectorAll('button[data-company-name]').forEach(button => {
+              const container = button.parentElement.parentElement;
+              UIManager.injectRating(container, rating, name); // companyName 전달
+            });
+          }
+
           this.completedCompanies++;
           DrawerManager.updateStatus({ type: 'progress', completed: this.completedCompanies, total: this.totalCompanies });
           await sleep(50);
         } else {
-          await sleep(100);
+          await sleep(500);
         }
       }
       DrawerManager.updateStatus({ text: '수집 완료', color: 'green' });
@@ -254,9 +282,9 @@ const JobScanner = {
       let lastHeight = 0, consecutiveNoChangeCount = 0;
       const MAX_NO_CHANGE_ATTEMPTS = 3;
       while (true) {
-        while (this.isPaused) await sleep(500);
+        while (this.isPaused) await sleep(1000);
         document.querySelectorAll('button[data-company-name]').forEach(button => {
-          const name = extractCompanyName(button.getAttribute('data-company-name')).trim();
+          const name = button.getAttribute('data-company-name');
           if (name && !companyNames.has(name)) {
             companyNames.add(name);
             DrawerManager.addItem(name);
@@ -266,7 +294,7 @@ const JobScanner = {
           }
         });
         window.scrollTo(0, document.body.scrollHeight);
-        await sleep(700);
+        await sleep(2000);
         const newHeight = document.body.scrollHeight;
         if (newHeight === lastHeight) {
           consecutiveNoChangeCount++;

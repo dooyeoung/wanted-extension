@@ -6,5 +6,6 @@ document.getElementById('start-scan').addEventListener('click', () => {
       return;
     }
     chrome.tabs.sendMessage(tabs[0].id, { type: 'START_COLLECTING' });
+    window.close(); // 팝업 닫기
   });
 });
