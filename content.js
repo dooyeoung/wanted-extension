@@ -75,6 +75,7 @@ const UIManager = {
 const DrawerManager = {
   drawer: null, list: null, openButton: null, statusElement: null, items: [],
   sortState: { key: null, direction: 'desc' },
+  latestStatus: { type: 'progress', completed: 0, total: 0 },
 
   create: function() {
     if (this.drawer) {
@@ -82,32 +83,23 @@ const DrawerManager = {
       if(this.openButton) this.openButton.style.display = 'block';
       return;
     }
-
     this.drawer = document.createElement('div');
     this.drawer.id = 'blind-rating-drawer';
     this.drawer.style.cssText = `position: fixed; top: 0; right: 0; width: 380px; height: 100%; background-color: white; border-left: 1px solid #e0e0e0; box-shadow: -2px 0 5px rgba(0,0,0,0.1); z-index: 9999; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box;`;
-
-    // --- 헤더 ---
     const header = document.createElement('div');
     header.style.cssText = 'flex-shrink: 0;';
     const title = document.createElement('h3');
     title.textContent = '블라인드 평점 수집';
     title.style.margin = '0 0 10px 0';
     header.appendChild(title);
-
-    // --- 테이블 헤더 (정렬 기능) ---
     const tableHeader = document.createElement('div');
     tableHeader.style.cssText = `display: flex; font-weight: bold; padding: 5px 0; border-bottom: 1px solid #ccc; flex-shrink: 0; user-select: none;`;
     tableHeader.innerHTML = `<div id="sort-by-name" style="flex: 3; cursor: pointer;">회사명</div><div id="sort-by-rating" style="flex: 1.5; text-align: center; cursor: pointer;">평점</div><div style="flex: 2; text-align: center;">바로가기</div>`;
     tableHeader.querySelector('#sort-by-name').onclick = () => this.sortItems('name');
     tableHeader.querySelector('#sort-by-rating').onclick = () => this.sortItems('rating');
     header.appendChild(tableHeader);
-
-    // --- 목록 컨테이너 ---
     this.list = document.createElement('div');
     this.list.style.cssText = `overflow-y: auto; flex-grow: 1;`;
-
-    // --- 푸터 (상태 및 컨트롤) ---
     const footer = document.createElement('div');
     footer.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-top: 10px; flex-shrink: 0;';
     this.statusElement = document.createElement('span');
@@ -116,7 +108,6 @@ const DrawerManager = {
     buttonGroup.querySelectorAll('button').forEach(btn => btn.style.marginLeft = '5px');
     footer.appendChild(this.statusElement);
     footer.appendChild(buttonGroup);
-
     this.drawer.appendChild(header); 
     this.drawer.appendChild(this.list);
     this.drawer.appendChild(footer);
@@ -130,22 +121,40 @@ const DrawerManager = {
     this.openButton = document.createElement('button');
     this.openButton.textContent = '결과 보기';
     this.openButton.style.cssText = `position: fixed; bottom: 20px; right: 20px; z-index: 9998; padding: 10px 15px; background-color: #0077cc; color: white; border: none; border-radius: 5px; cursor: pointer; display: none;`;
-    this.openButton.onclick = () => { if (this.drawer) this.drawer.style.display = 'flex'; };
+    this.openButton.onclick = () => {
+      if (this.drawer) this.drawer.style.display = 'flex';
+      this.updateButtonAndStatusDisplay();
+    };
     document.body.appendChild(this.openButton);
   },
 
-  updateStatus: function(status) {
-    if (!this.statusElement) return;
-    let text = '', color = 'black';
+  formatStatusText: function(status) {
     if (status.type === 'progress') {
-      text = `수집 현황: ${status.completed} / ${status.total}`;
-      color = 'blue';
+      return `수집 현황: ${status.completed} / ${status.total}`;
     } else {
-      text = status.text;
-      color = status.color;
+      return status.text;
     }
-    this.statusElement.textContent = text;
-    this.statusElement.style.color = color;
+  },
+
+  updateButtonAndStatusDisplay: function() {
+    if (!this.drawer || !this.openButton) return;
+
+    const statusText = this.formatStatusText(this.latestStatus);
+    const statusColor = this.latestStatus.color || 'blue';
+
+    if (this.drawer.style.display === 'none') {
+      this.openButton.textContent = `결과 보기 (${statusText})`;
+      this.statusElement.textContent = '';
+    } else {
+      this.openButton.textContent = '결과 보기';
+      this.statusElement.textContent = statusText;
+      this.statusElement.style.color = statusColor;
+    }
+  },
+
+  updateStatus: function(status) {
+    this.latestStatus = status;
+    this.updateButtonAndStatusDisplay();
   },
 
   addItem: function(companyName) {
@@ -240,7 +249,10 @@ const JobScanner = {
 
     document.getElementById('pause-scan').onclick = () => this.pause();
     document.getElementById('resume-scan').onclick = () => this.resume();
-    document.getElementById('close-drawer').onclick = () => DrawerManager.drawer.style.display = 'none';
+    document.getElementById('close-drawer').onclick = () => {
+      DrawerManager.drawer.style.display = 'none';
+      DrawerManager.updateButtonAndStatusDisplay();
+    };
     document.getElementById('resume-scan').style.display = 'none';
     document.getElementById('pause-scan').style.display = 'inline-block';
 
@@ -250,24 +262,33 @@ const JobScanner = {
 
     const consumer = async () => {
       while (!producerDone || taskQueue.length > 0) {
-        
         while (this.isPaused) await sleep(1000);
 
         if (taskQueue.length > 0) {
-          const name = taskQueue.shift();
-          const { rating } = await BlindAPI.fetchReview(extractCompanyName(name));
+          // 큐에서 최대 3개의 작업을 가져옴
+          const batchToProcess = taskQueue.splice(0, 2);
           
-          DrawerManager.updateItem(name, rating);
-          if (rating !== 'N/A') {
-            document.querySelectorAll('button[data-company-name]').forEach(button => {
-              const container = button.parentElement.parentElement;
-              UIManager.injectRating(container, rating, name); // companyName 전달
-            });
-          }
+          const batchPromises = batchToProcess.map(name => 
+            BlindAPI.fetchReview(extractCompanyName(name)).then(result => {
+              const { rating } = result;
+              
+              DrawerManager.updateItem(name, rating);
+              if (rating !== 'N/A') {
+                document.querySelectorAll('button[data-company-name]').forEach(button => {
+                  const container = button.parentElement.parentElement;
+                  UIManager.injectRating(container, rating, name);
+                });
+              }
 
-          this.completedCompanies++;
-          DrawerManager.updateStatus({ type: 'progress', completed: this.completedCompanies, total: this.totalCompanies });
-          await sleep(50);
+              this.completedCompanies++;
+              DrawerManager.updateStatus({ type: 'progress', completed: this.completedCompanies, total: this.totalCompanies });
+            })
+          );
+
+          // 현재 배치(2개)의 작업이 모두 완료될 때까지 기다림
+          await Promise.all(batchPromises);
+          await sleep(100); // 각 배치 작업 후 지연
+
         } else {
           await sleep(500);
         }
