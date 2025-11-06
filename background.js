@@ -7,7 +7,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     fetch(url)
       .then((res) => res.text())
       .then((html) => {
-        console.log('[BACKGROUND] fetched HTML for', message.company);
+        console.log(`[BACKGROUND] Fetched HTML for ${url} ${message.company}. HTML content (first 500 chars):`, html.substring(0, 500));
         sendResponse({ success: true, html });
       })
       .catch((err) => {

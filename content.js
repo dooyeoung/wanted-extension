@@ -42,6 +42,8 @@ const BlindAPI = {
             }
             resolve({ rating });
           } else {
+            // 요청 실패 시 에러 로그 추가
+            console.error(`Failed to fetch rating for ${companyName}:`, response?.error || 'Unknown error');
             resolve(null);
           }
         }
@@ -223,6 +225,37 @@ const DrawerManager = {
 };
 
 
+/**
+ * 여러 Promise를 동시성(concurrency) 제한을 두고 실행하는 클래스
+ */
+class PromisePool {
+  constructor(concurrency = 5) {
+    this.concurrency = concurrency;
+    this.active = 0;
+    this.queue = [];
+  }
+
+  add(task) {
+    return new Promise((resolve, reject) => {
+      const wrappedTask = () => task().then(resolve, reject);
+      this.queue.push(wrappedTask);
+      this.run();
+    });
+  }
+
+  run() {
+    while (this.active < this.concurrency && this.queue.length > 0) {
+      this.active++;
+      const task = this.queue.shift();
+      task().finally(() => {
+        this.active--;
+        this.run();
+      });
+    }
+  }
+}
+
+
 // --- 메인 애플리케이션 모듈 ---
 
 const JobScanner = {
@@ -260,7 +293,7 @@ const JobScanner = {
   },
 
   /**
-   * 전체 페이지를 스크롤하며 모든 회사 이름을 수집합니다.
+   * 전체 페이지를 스크롤하며 모든 회사 이름을 수집하고, 평점을 동시성 제어하여 조회합니다.
    */
   startFullScan: async function() {
     if (this.isScanning) return;
@@ -271,36 +304,43 @@ const JobScanner = {
 
     const companyNames = new Set();
     let lastHeight = 0;
+    let consecutiveNoChangeCount = 0;
+    const MAX_NO_CHANGE_ATTEMPTS = 3;
 
-    console.log("Starting full scan...");
+    console.log("Starting full scan in stable, sequential mode...");
 
+    // 1. 스크롤하며 모든 회사 이름 수집
     while (true) {
       document.querySelectorAll('button[data-company-name]').forEach(button => {
-        const name = extractCompanyName(button.getAttribute('data-company-name'));
-        // 새로운 회사 이름을 발견하면 Set과 Drawer에 즉시 추가
-        if (!companyNames.has(name)) {
-          console.log(`Found new company: ${name}`);
+        const name = extractCompanyName(button.getAttribute('data-company-name')).trim();
+        if (name && !companyNames.has(name)) {
           companyNames.add(name);
           DrawerManager.addItem(name);
         }
       });
 
       window.scrollTo(0, document.body.scrollHeight);
-      await sleep(2000); // 동적 로딩 대기
+      await sleep(2000);
 
       const newHeight = document.body.scrollHeight;
       if (newHeight === lastHeight) {
-        console.log("Scroll finished. Total companies found:", companyNames.size);
-        break; // 스크롤이 더 이상 늘어나지 않으면 종료
+        consecutiveNoChangeCount++;
+        if (consecutiveNoChangeCount >= MAX_NO_CHANGE_ATTEMPTS) {
+          break;
+        }
+      } else {
+        consecutiveNoChangeCount = 0;
+        lastHeight = newHeight;
       }
-      lastHeight = newHeight;
     }
 
-    // 평점 조회 및 UI 업데이트
-    for (const name of companyNames) {
+    // 2. 가장 안정적인 방식으로 하나씩, 시간 간격을 두고 조회
+    const companyNamesArray = Array.from(companyNames);
+    for (const name of companyNamesArray) {
       const result = await BlindAPI.fetchReview(name);
       const rating = result ? result.rating : 'N/A';
       DrawerManager.updateItem(name, rating);
+      await sleep(300); // 각 요청 사이에 300ms 지연 추가
     }
 
     console.log("Full scan completed.");
