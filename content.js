@@ -7,7 +7,21 @@ function extractCompanyName(text) {
   return text.replace(/\s*\(.*?\)/g, '');
 }
 
-// --- 메인 애플리케이션 모듈 ---
+function getRatingColor(rating) {
+  const numericRating = parseFloat(rating);
+  if (numericRating >= 4.0) return 'red';
+  if (numericRating >= 3.0) return 'orange';
+  if (numericRating >= 2.0) return 'yellow';
+  return 'gray';
+}
+
+const getOneCompany = async () => {
+  // Placeholder selectors - these need to be verified by inspecting a Wanted detail page
+  const companyName = document.querySelector('a[data-company-name]').textContent;
+  console.log(companyName);
+};
+
+// --- API 모듈 ---
 const JobScanner = {
   isScanning: false, isPaused: false, totalCompanies: 0, completedCompanies: 0, ratingsCache: {},
 
@@ -165,4 +179,15 @@ const JobScanner = {
   }
 };
 
-JobScanner.init();
+(async () => {
+  const isListingPage = window.location.pathname.startsWith('/wdlist');
+  const isDetailPage = window.location.pathname.startsWith('/wd/') && !isNaN(parseInt(window.location.pathname.split('/')[2]));
+
+  if (isListingPage) {
+    JobScanner.init()
+  } else if (isDetailPage) {
+    await getOneCompany(); // Call the standalone function
+  } else {
+    console.log("Not a Wanted listing or detail page, doing nothing.");
+  }
+})();
