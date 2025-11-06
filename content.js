@@ -88,12 +88,12 @@ const DrawerManager = {
     this.drawer.style.cssText = `position: fixed; top: 0; right: 0; width: 380px; height: 100%; background-color: white; border-left: 1px solid #e0e0e0; box-shadow: -2px 0 5px rgba(0,0,0,0.1); z-index: 9999; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box;`;
     const header = document.createElement('div');
     header.style.cssText = 'flex-shrink: 0;';
-    const title = document.createElement('h3');
+    const title = document.createElement('span');
     title.textContent = '블라인드 평점 수집';
     title.style.margin = '0 0 10px 0';
     header.appendChild(title);
     const tableHeader = document.createElement('div');
-    tableHeader.style.cssText = `display: flex; font-weight: bold; padding: 5px 0; border-bottom: 1px solid #ccc; flex-shrink: 0; user-select: none;`;
+    tableHeader.style.cssText = `height: 60px; display: flex; font-weight: bold; padding: 5px 0; border-bottom: 1px solid #ccc; flex-shrink: 0; user-select: none;`;
     tableHeader.innerHTML = `<div id="sort-by-name" style="flex: 3; cursor: pointer;">회사명</div><div id="sort-by-rating" style="flex: 1.5; text-align: center; cursor: pointer;">평점</div><div style="flex: 2; text-align: center;">바로가기</div>`;
     tableHeader.querySelector('#sort-by-name').onclick = () => this.sortItems('name');
     tableHeader.querySelector('#sort-by-rating').onclick = () => this.sortItems('rating');
