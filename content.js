@@ -85,7 +85,7 @@ const DrawerManager = {
     }
     this.drawer = document.createElement('div');
     this.drawer.id = 'blind-rating-drawer';
-    this.drawer.style.cssText = `position: fixed; top: 0; right: 0; width: 380px; height: 100%; background-color: white; border-left: 1px solid #e0e0e0; box-shadow: -2px 0 5px rgba(0,0,0,0.1); z-index: 9999; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box;`;
+    this.drawer.style.cssText = `position: fixed; top: 0; right: 0; width: 500px; height: 100%; background-color: white; border-left: 1px solid #e0e0e0; box-shadow: -2px 0 5px rgba(0,0,0,0.1); z-index: 9999; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box;`;
     const header = document.createElement('div');
     header.style.cssText = 'flex-shrink: 0; height: 60px;';
     const title = document.createElement('span');
@@ -94,7 +94,7 @@ const DrawerManager = {
     header.appendChild(title);
     const tableHeader = document.createElement('div');
     tableHeader.style.cssText = `display: flex; padding: 5px 0; border-bottom: 1px solid #ccc; flex-shrink: 0; user-select: none;`;
-    tableHeader.innerHTML = `<div id="sort-by-name" style="flex: 3; cursor: pointer;">회사명</div><div id="sort-by-rating" style="flex: 1.5; text-align: center; cursor: pointer;">평점</div><div style="flex: 2; text-align: center;">바로가기</div>`;
+    tableHeader.innerHTML = `<div id="sort-by-name" style="flex: 4; cursor: pointer;">회사명</div><div id="sort-by-rating" style="flex: 1; text-align: center; cursor: pointer;">평점</div><div style="flex: 3; text-align: center;">바로가기</div>`;
     header.appendChild(tableHeader);
     this.list = document.createElement('div');
     this.list.style.cssText = `overflow-y: auto; flex-grow: 1;`;
@@ -167,20 +167,27 @@ const DrawerManager = {
     const row = document.createElement('div');
     row.style.cssText = `display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee;`;
     const nameCell = document.createElement('div');
-    nameCell.style.cssText = 'flex: 3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;';
+    nameCell.style.cssText = 'flex: 4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;';
     nameCell.textContent = companyName;
     const ratingCell = document.createElement('div');
-    ratingCell.style.cssText = 'flex: 1.5; text-align: center;';
+    ratingCell.style.cssText = 'flex: 1; text-align: center;';
     ratingCell.textContent = '대기 중...';
     const linkCell = document.createElement('div');
-    linkCell.style.cssText = 'flex: 2; text-align: center;';
+    linkCell.style.cssText = 'flex: 3; text-align: center;';
 
     // 리뷰 보기 버튼을 addItem 시점에 추가
-    const linkButton = document.createElement('button');
-    linkButton.textContent = '리뷰 보기';
-    linkButton.style.cssText = `color: #0077cc; text-decoration: underline; cursor: pointer; border: none; background: none; padding: 0;`;
-    linkButton.onclick = () => window.open(`https://www.teamblind.com/kr/company/${encodeURIComponent(extractCompanyName(companyName))}/reviews`, '_blank');
-    linkCell.appendChild(linkButton);
+    const blindLinkButton = document.createElement('button');
+    blindLinkButton.textContent = '리뷰 보기';
+    blindLinkButton.style.cssText = `color: #0077cc; text-decoration: underline; cursor: pointer; border: none; background: none; padding: 0;`;
+    blindLinkButton.onclick = () => window.open(`https://www.teamblind.com/kr/company/${encodeURIComponent(extractCompanyName(companyName))}/reviews`, '_blank');
+    linkCell.appendChild(blindLinkButton);
+
+    // 잡코리아 정보 보기 버튼 추가
+    const jobKoreaLinkButton = document.createElement('button');
+    jobKoreaLinkButton.textContent = '잡코리아 정보 보기';
+    jobKoreaLinkButton.style.cssText = `color: #0077cc; text-decoration: underline; cursor: pointer; border: none; background: none; padding: 0; margin-left: 8px;`;
+    jobKoreaLinkButton.onclick = () => window.open(`https://www.jobkorea.co.kr/Search/?stext=${encodeURIComponent(extractCompanyName(companyName))}&tabType=corp&Page_No=1`, '_blank');
+    linkCell.appendChild(jobKoreaLinkButton);
 
     row.appendChild(nameCell); row.appendChild(ratingCell); row.appendChild(linkCell);
     this.list.appendChild(row);
@@ -245,7 +252,7 @@ const DrawerManager = {
 
 // --- 메인 애플리케이션 모듈 ---
 const JobScanner = {
-  isScanning: false, isPaused: false, totalCompanies: 0, completedCompanies: 0,
+  isScanning: false, isPaused: false, totalCompanies: 0, completedCompanies: 0, ratingsCache: {},
 
   pause: function() {
     this.isPaused = true;
@@ -280,31 +287,35 @@ const JobScanner = {
         while (this.isPaused) await sleep(1000);
 
         if (taskQueue.length > 0) {
-          const batchToProcess = taskQueue.splice(0, 1);
-          const batchPromises = batchToProcess.map(name => 
-            BlindAPI.fetchReview(extractCompanyName(name)).then(result => {
-              const { rating } = result;
-              DrawerManager.updateItem(name, rating);
-              if (rating !== 'N/A') {
-                document.querySelectorAll(`button[data-company-name="${name}"]`).forEach(button => {
-                  const container = button.parentElement.parentElement;
-                  UIManager.injectRating(container, rating, name);
-                });
-              }
-              this.completedCompanies++;
-              DrawerManager.updateStatus({ type: 'progress', completed: this.completedCompanies, total: this.totalCompanies });
-            })
-          );
-          await Promise.all(batchPromises);
-          await sleep(100);
+          const name = taskQueue.shift(); // Process one by one
+
+          const processRating = (rating) => {
+            DrawerManager.updateItem(name, rating);
+            if (rating !== 'N/A') {
+              document.querySelectorAll(`button[data-company-name="${name}"]`).forEach(button => {
+                const container = button.parentElement.parentElement;
+                UIManager.injectRating(container, rating, name);
+              });
+            }
+            this.completedCompanies++;
+            DrawerManager.updateStatus({ type: 'progress', completed: this.completedCompanies, total: this.totalCompanies });
+          };
+
+          if (this.ratingsCache[name]) {
+            processRating(this.ratingsCache[name]);
+          } else {
+            const result = await BlindAPI.fetchReview(extractCompanyName(name));
+            const { rating } = result;
+            this.ratingsCache[name] = rating;
+            await StorageManager.save(this.ratingsCache);
+            processRating(rating);
+            await sleep(100); // API fetch delay
+          }
         } else {
           await sleep(500);
         }
       }
-      DrawerManager.updateStatus({ text: '수집 완료', color: 'green' });
-      this.isScanning = false;
-      document.getElementById('pause-scan').style.display = 'none';
-      document.getElementById('resume-scan').style.display = 'none';
+      this.complete();
     };
 
     const producer = async () => {
@@ -316,9 +327,24 @@ const JobScanner = {
           const name = button.getAttribute('data-company-name');
           if (name && !companyNames.has(name)) {
             companyNames.add(name);
-            DrawerManager.addItem(name);
-            taskQueue.push(name);
-            this.totalCompanies++;
+            this.totalCompanies++; // Increment total count regardless of cache hit
+
+            DrawerManager.addItem(name); // Add to drawer UI
+
+            if (this.ratingsCache[name]) { // Check cache
+              const rating = this.ratingsCache[name];
+              // Update UI immediately with cached rating
+              DrawerManager.updateItem(name, rating);
+              if (rating !== 'N/A') {
+                document.querySelectorAll(`button[data-company-name="${name}"]`).forEach(btn => {
+                  const container = btn.parentElement.parentElement;
+                  UIManager.injectRating(container, rating, name);
+                });
+              }
+              this.completedCompanies++; // Mark as completed
+            } else {
+              taskQueue.push(name); // Not in cache, add to fetch queue
+            }
             DrawerManager.updateStatus({ type: 'progress', completed: this.completedCompanies, total: this.totalCompanies });
           }
         });
@@ -340,7 +366,26 @@ const JobScanner = {
     producer();
   },
 
-  init: function() {
+  complete: function() {
+    DrawerManager.updateStatus({ text: '수집 완료', color: 'green' });
+    this.isScanning = false;
+    document.getElementById('pause-scan').style.display = 'none';
+    document.getElementById('resume-scan').style.display = 'none';
+
+    // Iterate through ratingsCache and inject ratings into company cards
+    for (const name in this.ratingsCache) {
+      const rating = this.ratingsCache[name];
+      if (rating !== 'N/A') { // Only inject if it's a valid rating
+        document.querySelectorAll(`button[data-company-name="${name}"]`).forEach(btn => {
+          const container = btn.parentElement.parentElement;
+          UIManager.injectRating(container, rating, name);
+        });
+      }
+    }
+  },
+
+  init: async function() {
+    this.ratingsCache = await StorageManager.load();
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       if (request.type === 'SHOW_DRAWER') {
         DrawerManager.create();
