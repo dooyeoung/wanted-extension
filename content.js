@@ -63,7 +63,7 @@ const UIManager = {
     linkButton.onclick = (e) => {
       e.stopPropagation(); // 부모 요소의 클릭 이벤트 방지
       e.preventDefault(); // 기본 링크 동작 방지
-      window.open(`https://www.teamblind.com/kr/company/${encodeURIComponent(companyName)}/reviews`, '_blank');
+      window.open(`https://www.teamblind.com/kr/company/${encodeURIComponent(extractCompanyName(companyName))}/reviews`, '_blank');
     };
     scoreDiv.appendChild(linkButton);
 
@@ -176,7 +176,7 @@ const DrawerManager = {
       const linkButton = document.createElement('button');
       linkButton.textContent = '리뷰 보기';
       linkButton.style.cssText = `color: #0077cc; text-decoration: underline; cursor: pointer; border: none; background: none; padding: 0;`;
-      linkButton.onclick = () => window.open(`https://www.teamblind.com/kr/company/${encodeURIComponent(companyName)}/reviews`, '_blank');
+      linkButton.onclick = () => window.open(`https://www.teamblind.com/kr/company/${encodeURIComponent(extractCompanyName(companyName))}/reviews`, '_blank');
       linkCell.appendChild(linkButton);
     }
   },
