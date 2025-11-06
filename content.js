@@ -112,10 +112,122 @@ const UIManager = {
 };
 
 
+// --- Drawer UI 관련 모듈 ---
+
+const DrawerManager = {
+  drawer: null,
+  list: null,
+  openButton: null,
+
+  createOpenButton: function() {
+    if (this.openButton) return;
+
+    this.openButton = document.createElement('button');
+    this.openButton.textContent = '결과 보기';
+    this.openButton.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 9998;
+      padding: 10px 15px;
+      background-color: #0077cc;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      display: none; /* 초기에는 숨김 */
+    `;
+    this.openButton.onclick = () => {
+      if (this.drawer) this.drawer.style.display = 'flex';
+    };
+    document.body.appendChild(this.openButton);
+  },
+
+  create: function() {
+    this.createOpenButton(); // 열기 버튼 생성
+
+    if (this.drawer) {
+      this.drawer.style.display = 'flex';
+      this.openButton.style.display = 'block'; // 스캔 시작 시 열기 버튼 표시
+      return;
+    }
+
+    this.drawer = document.createElement('div');
+    this.drawer.id = 'blind-rating-drawer';
+    this.drawer.style.cssText = `
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 300px;
+      height: 100%;
+      background-color: white;
+      border-left: 1px solid #e0e0e0;
+      box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+      z-index: 9999;
+      display: flex; /* flexbox 레이아웃 사용 */
+      flex-direction: column;
+      padding: 10px;
+      box-sizing: border-box;
+    `;
+
+    const header = document.createElement('div');
+    header.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;';
+
+    const title = document.createElement('h3');
+    title.textContent = '블라인드 평점 수집 결과';
+    title.style.margin = '0';
+
+    const closeButton = document.createElement('button');
+    closeButton.textContent = '닫기';
+    closeButton.onclick = () => this.drawer.style.display = 'none';
+
+    header.appendChild(title);
+    header.appendChild(closeButton);
+
+    this.list = document.createElement('ul');
+    this.list.style.cssText = `
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      overflow-y: auto;
+      flex-grow: 1;
+    `;
+
+    this.drawer.appendChild(header);
+    this.drawer.appendChild(this.list);
+    document.body.appendChild(this.drawer);
+    
+    this.openButton.style.display = 'block'; // Drawer 생성 후 열기 버튼 표시
+  },
+
+  addItem: function(companyName) {
+    const item = document.createElement('li');
+    item.id = `drawer-item-${companyName}`;
+    item.textContent = `${companyName}: 수집 중...`;
+    item.style.padding = '5px 0';
+    this.list.appendChild(item);
+  },
+
+  updateItem: function(companyName, rating) {
+    const item = document.getElementById(`drawer-item-${companyName}`);
+    if (item) {
+      item.innerHTML = `${companyName}: <span style="color: #ffb400; font-weight: bold;">★ ${rating}</span>`;
+    }
+  },
+
+  clear: function() {
+    if (this.list) {
+      this.list.innerHTML = '';
+    }
+  }
+};
+
+
 // --- 메인 애플리케이션 모듈 ---
 
 const JobScanner = {
   scoreCache: {}, // 회사별 평점 캐시
+  isScanning: false,
 
   /**
    * 특정 채용 공고 카드에서 회사 이름을 찾아 평점을 가져오고 UI에 삽입합니다.
@@ -148,6 +260,54 @@ const JobScanner = {
   },
 
   /**
+   * 전체 페이지를 스크롤하며 모든 회사 이름을 수집합니다.
+   */
+  startFullScan: async function() {
+    if (this.isScanning) return;
+    this.isScanning = true;
+
+    DrawerManager.create();
+    DrawerManager.clear();
+
+    const companyNames = new Set();
+    let lastHeight = 0;
+
+    console.log("Starting full scan...");
+
+    while (true) {
+      document.querySelectorAll('button[data-company-name]').forEach(button => {
+        const name = extractCompanyName(button.getAttribute('data-company-name'));
+        // 새로운 회사 이름을 발견하면 Set과 Drawer에 즉시 추가
+        if (!companyNames.has(name)) {
+          console.log(`Found new company: ${name}`);
+          companyNames.add(name);
+          DrawerManager.addItem(name);
+        }
+      });
+
+      window.scrollTo(0, document.body.scrollHeight);
+      await sleep(2000); // 동적 로딩 대기
+
+      const newHeight = document.body.scrollHeight;
+      if (newHeight === lastHeight) {
+        console.log("Scroll finished. Total companies found:", companyNames.size);
+        break; // 스크롤이 더 이상 늘어나지 않으면 종료
+      }
+      lastHeight = newHeight;
+    }
+
+    // 평점 조회 및 UI 업데이트
+    for (const name of companyNames) {
+      const result = await BlindAPI.fetchReview(name);
+      const rating = result ? result.rating : 'N/A';
+      DrawerManager.updateItem(name, rating);
+    }
+
+    console.log("Full scan completed.");
+    this.isScanning = false;
+  },
+
+  /**
    * MutationObserver 콜백: 동적으로 추가되는 채용 공고를 처리합니다.
    * @param {MutationRecord[]} mutationList - 변경 사항 목록
    */
@@ -168,16 +328,24 @@ const JobScanner = {
    * 애플리케이션을 초기화하고 실행합니다.
    */
   init: function() {
+    // 메시지 리스너 설정
+    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+      console.log('Content Script: Message received', request);
+      if (request.type === 'START_COLLECTING') {
+        this.startFullScan();
+      }
+    });
+
     const url = window.location.href;
     
     // 채용 목록 페이지에서만 실행
-    if (url.includes('/wdlist')) {
+    if (url.includes('/wdlistㄹㄹㄹㄹㄹ')) {
       // 1. 이미 로드된 채용 공고 처리
       document.querySelectorAll('ul[data-cy="job-list"] > li').forEach(jobCard => {
         this.processJobCard(jobCard);
       });
 
-      // 2. 동적으로 로드되는 채-용 공고를 감시할 Observer 설정
+      // 2. 동적으로 로드되는 채용 공고를 감시할 Observer 설정
       const targetNode = document.querySelector('ul[data-cy="job-list"]');
       if (targetNode) {
         const observer = new MutationObserver(this.handleMutation.bind(this));
@@ -190,5 +358,4 @@ const JobScanner = {
   }
 };
 
-// --- 애플리케이션 실행 ---
 JobScanner.init();
