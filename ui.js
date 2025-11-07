@@ -16,6 +16,7 @@ const UIManager = {
         <button class="blind-review-button" style="color: #0077cc; text-decoration: underline; cursor: pointer; border: none; background: none; padding: 0; font-size: 1em;">리뷰 보기</button>
       </div>
     `;
+    element.parentElement.parentElement.setAttribute("blind-rating", rating);
     element.insertAdjacentHTML('beforeend', htmlContent);
     const linkButton = element.querySelector('.blind-review-button');
     if (linkButton) {

@@ -112,7 +112,8 @@ const JobScanner = {
           }
         });
         window.scrollTo(0, document.body.scrollHeight);
-        await sleep(200);
+        await sleep(500);
+
         const newHeight = document.body.scrollHeight;
         if (newHeight === lastHeight) {
           consecutiveNoChangeCount++;
