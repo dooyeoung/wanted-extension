@@ -44,18 +44,18 @@ function addBlindReviewSortButton() {
   const blindReviewSortButton = document.getElementById('sort-by-blind-review');
   if (blindReviewSortButton) {
     blindReviewSortButton.onclick = (event) => {
-      // Remove selected class from all siblings
+      // Remove selected class from all siblings (including native ones)
       sortFilterUl.querySelectorAll('li').forEach(li => {
         li.classList.remove('SortFilter_SortFilter__list__item__selected__k5thb');
         li.querySelector('span')?.classList.remove('SortFilter_SortFilter__list__item__selected__text__u7klW', 'wds-12dtfjt');
-        li.querySelector('span')?.classList.add('wds-83zqyc'); // Re-add default text class
+        li.querySelector('span')?.classList.add('wds-83zqyc');
       });
 
-      // Add selected class to the clicked item
+      // Add selected class to the clicked item (our custom button)
       const parentLi = event.currentTarget.closest('li');
       parentLi.classList.add('SortFilter_SortFilter__list__item__selected__k5thb');
       parentLi.querySelector('span')?.classList.add('SortFilter_SortFilter__list__item__selected__text__u7klW', 'wds-12dtfjt');
-      parentLi.querySelector('span')?.classList.remove('wds-83zqyc'); // Remove default text class
+      parentLi.querySelector('span')?.classList.remove('wds-83zqyc');
 
       const jobListUl = document.querySelector('ul[data-cy="job-list"]');
       sortJobList(jobListUl);
@@ -200,6 +200,8 @@ const JobScanner = {
   },
 
   reinjectRatings: function() {
+    const jobListUl = document.querySelector('ul[data-cy="job-list"]');
+
     for (const name in this.ratingsCache) {
       const rating = this.ratingsCache[name];
       if (rating !== 'N/A') {
@@ -210,6 +212,23 @@ const JobScanner = {
             UIManager.injectRating(container, rating, name);
           }
         });
+      }
+    }
+
+    // After re-injecting and sorting, correct the selected state of our custom button
+    const sortFilterUl = document.querySelector('ul.SortFilter_SortFilter__list__QuSd6');
+    const blindReviewSortButtonLi = document.getElementById('sort-by-blind-review')?.closest('li');
+
+    if (sortFilterUl && blindReviewSortButtonLi) {
+      // Check if any native sort button is currently selected
+      // Exclude our custom button from this check
+      const nativeSelectedButton = sortFilterUl.querySelector('li.SortFilter_SortFilter__list__item__selected__k5thb:not(#sort-by-blind-review)');
+
+      if (nativeSelectedButton) {
+        // If a native button is selected, ensure our custom button is NOT selected
+        blindReviewSortButtonLi.classList.remove('SortFilter_SortFilter__list__item__selected__k5thb');
+        blindReviewSortButtonLi.querySelector('span')?.classList.remove('SortFilter_SortFilter__list__item__selected__text__u7klW', 'wds-12dtfjt');
+        blindReviewSortButtonLi.querySelector('span')?.classList.add('wds-83zqyc');
       }
     }
   },
