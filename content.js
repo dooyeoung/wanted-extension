@@ -7,6 +7,62 @@ function extractCompanyName(text) {
   return text.replace(/\s*\(.*?\)/g, '');
 }
 
+function sortJobList(ulElement) {
+  if (!ulElement) {
+    console.error("UL element not found for sorting.");
+    return;
+  }
+
+  const listItems = Array.from(ulElement.children); // Get all li children
+
+  listItems.sort((a, b) => {
+    const ratingA = parseFloat(a.getAttribute('blind-rating')) || 0;
+    const ratingB = parseFloat(b.getAttribute('blind-rating')) || 0;
+    return ratingB - ratingA; // Descending order (highest rating first)
+  });
+
+  // Clear existing list items and append sorted ones
+  listItems.forEach(item => ulElement.appendChild(item));
+}
+
+function addBlindReviewSortButton() {
+  const sortFilterUl = document.querySelector('ul.SortFilter_SortFilter__list__QuSd6');
+  if (!sortFilterUl) {
+    console.log("Sort filter UL not found.");
+    return;
+  }
+
+  const newSortItemHtml = `
+    <li class="SortFilter_SortFilter__list__item__CJk9X" style="width: 100px">
+      <button type="button" id="sort-by-blind-review">
+        <span class="SortFilter_SortFilter__list__item__text__lJESk wds-83zqyc">블라인드 리뷰순</span>
+      </button>
+    </li>
+  `;
+  sortFilterUl.insertAdjacentHTML('beforeend', newSortItemHtml);
+
+  const blindReviewSortButton = document.getElementById('sort-by-blind-review');
+  if (blindReviewSortButton) {
+    blindReviewSortButton.onclick = (event) => {
+      // Remove selected class from all siblings
+      sortFilterUl.querySelectorAll('li').forEach(li => {
+        li.classList.remove('SortFilter_SortFilter__list__item__selected__k5thb');
+        li.querySelector('span')?.classList.remove('SortFilter_SortFilter__list__item__selected__text__u7klW', 'wds-12dtfjt');
+        li.querySelector('span')?.classList.add('wds-83zqyc'); // Re-add default text class
+      });
+
+      // Add selected class to the clicked item
+      const parentLi = event.currentTarget.closest('li');
+      parentLi.classList.add('SortFilter_SortFilter__list__item__selected__k5thb');
+      parentLi.querySelector('span')?.classList.add('SortFilter_SortFilter__list__item__selected__text__u7klW', 'wds-12dtfjt');
+      parentLi.querySelector('span')?.classList.remove('wds-83zqyc'); // Remove default text class
+
+      const jobListUl = document.querySelector('ul[data-cy="job-list"]');
+      sortJobList(jobListUl);
+    };
+  }
+}
+
 const getOneCompany = async () => {
   // Placeholder selectors - these need to be verified by inspecting a Wanted detail page
   const companyName = document.querySelector('a[data-company-name]').textContent;
@@ -16,6 +72,7 @@ const getOneCompany = async () => {
 // --- API 모듈 ---
 const JobScanner = {
   isScanning: false, isPaused: false, totalCompanies: 0, completedCompanies: 0, ratingsCache: {},
+  isDrawerInitialized: false,
 
   pause: function() {
     this.isPaused = true;
@@ -146,27 +203,40 @@ const JobScanner = {
         });
       }
     }
+    // const jobListUl = document.querySelector('ul[data-cy="job-list"]');
+    // if (jobListUl) {
+    //   sortJobList(jobListUl);
+    // }
   },
 
   init: async function() {
     this.ratingsCache = await StorageManager.load();
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       if (request.type === 'SHOW_DRAWER') {
-        DrawerManager.create();
-        DrawerManager.clear();
-        DrawerManager.updateStatus({ text: '대기 중', color: 'gray'});
-         // 버튼 이벤트 핸들러 설정
-        document.getElementById('start-scan-in-drawer').onclick = () => this.startFullScan();
-        document.getElementById('pause-scan').onclick = () => this.pause();
-        document.getElementById('resume-scan').onclick = () => this.resume();
-        document.getElementById('close-drawer').onclick = () => {
-          DrawerManager.drawer.style.display = 'none';
-          DrawerManager.updateButtonAndStatusDisplay();
-        };
-        // 초기 버튼 상태 설정
-        document.getElementById('start-scan-in-drawer').style.display = 'inline-block';
-        document.getElementById('pause-scan').style.display = 'none';
-        document.getElementById('resume-scan').style.display = 'none';
+        if (!this.isDrawerInitialized) {
+          DrawerManager.create();
+          DrawerManager.clear();
+          // 버튼 이벤트 핸들러 설정
+          document.getElementById('start-scan-in-drawer').onclick = () => this.startFullScan();
+          document.getElementById('pause-scan').onclick = () => this.pause();
+          document.getElementById('resume-scan').onclick = () => this.resume();
+          document.getElementById('close-drawer').onclick = () => {
+            DrawerManager.drawer.style.display = 'none';
+            DrawerManager.updateButtonAndStatusDisplay();
+          };
+          DrawerManager.updateStatus({ text: '대기 중', color: 'gray'});
+          // 초기 버튼 상태 설정
+          document.getElementById('start-scan-in-drawer').style.display = 'inline-block';
+          document.getElementById('pause-scan').style.display = 'none';
+          document.getElementById('resume-scan').style.display = 'none';
+          this.isDrawerInitialized = true;
+        } else {
+          // If already initialized, just ensure it's visible
+          if (DrawerManager.drawer) {
+            DrawerManager.drawer.style.display = 'flex';
+          }
+        }
+
       }
     });
   }
@@ -177,7 +247,8 @@ const JobScanner = {
   const isDetailPage = window.location.pathname.startsWith('/wd/') && !isNaN(parseInt(window.location.pathname.split('/')[2]));
 
   if (isListingPage) {
-    JobScanner.init()
+    JobScanner.init();
+    addBlindReviewSortButton();
   } else if (isDetailPage) {
     await getOneCompany(); // Call the standalone function
   } else {
