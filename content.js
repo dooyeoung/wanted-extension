@@ -7,14 +7,6 @@ function extractCompanyName(text) {
   return text.replace(/\s*\(.*?\)/g, '');
 }
 
-function getRatingColor(rating) {
-  const numericRating = parseFloat(rating);
-  if (numericRating >= 4.0) return 'red';
-  if (numericRating >= 3.0) return 'orange';
-  if (numericRating >= 2.0) return 'yellow';
-  return 'gray';
-}
-
 const getOneCompany = async () => {
   // Placeholder selectors - these need to be verified by inspecting a Wanted detail page
   const companyName = document.querySelector('a[data-company-name]').textContent;

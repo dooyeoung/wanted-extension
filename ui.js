@@ -9,22 +9,20 @@ function getRatingColor(rating) {
 const UIManager = {
   injectRating: function(element, rating, companyName) {
     if (element.querySelector('.blind-score')) return;
-    const scoreDiv = document.createElement('div');
-    scoreDiv.className = 'blind-score';
-    scoreDiv.style.cssText = `padding-left: 4px; padding-top: 4px; font-size: 0.8125rem; font-weight: 500; display: flex; align-items: center;`;
-    const ratingSpan = document.createElement('span');
     const color = getRatingColor(rating);
-    ratingSpan.style.cssText = `color: ${color}; margin-right: 4px;`;
-    ratingSpan.textContent = `★ ${rating}`;
-    scoreDiv.appendChild(ratingSpan);
-    const linkButton = document.createElement('button');
-    linkButton.textContent = '리뷰 보기';
-    linkButton.style.cssText = `color: #0077cc; text-decoration: underline; cursor: pointer; border: none; background: none; padding: 0; font-size: 1em;`;
-    linkButton.onclick = (e) => {
-      e.stopPropagation(); e.preventDefault();
-      window.open(`https://www.teamblind.com/kr/company/${encodeURIComponent(extractCompanyName(companyName))}/reviews`, '_blank');
-    };
-    scoreDiv.appendChild(linkButton);
-    element.append(scoreDiv);
+    const htmlContent = `
+      <div class="blind-score" style="padding-left: 4px; padding-top: 4px; font-size: 0.8125rem; font-weight: 500; display: flex; align-items: center;">
+        <span style="color: ${color}; margin-right: 4px;">★ ${rating}</span>
+        <button class="blind-review-button" style="color: #0077cc; text-decoration: underline; cursor: pointer; border: none; background: none; padding: 0; font-size: 1em;">리뷰 보기</button>
+      </div>
+    `;
+    element.insertAdjacentHTML('beforeend', htmlContent);
+    const linkButton = element.querySelector('.blind-review-button');
+    if (linkButton) {
+      linkButton.onclick = (e) => {
+        e.stopPropagation(); e.preventDefault();
+        window.open(`https://www.teamblind.com/kr/company/${encodeURIComponent(extractCompanyName(companyName))}/reviews`, '_blank');
+      };
+    }
   }
 };

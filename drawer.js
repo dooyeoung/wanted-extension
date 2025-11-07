@@ -10,41 +10,45 @@ const DrawerManager = {
       if(this.openButton) this.openButton.style.display = 'block';
       return;
     }
-    this.drawer = document.createElement('div');
-    this.drawer.id = 'blind-rating-drawer';
-    this.drawer.style.cssText = `position: fixed; top: 0; right: 0; width: 500px; height: 100%; background-color: white; border-left: 1px solid #e0e0e0; box-shadow: -2px 0 5px rgba(0,0,0,0.1); z-index: 9999; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box;`;
-    const header = document.createElement('div');
-    header.style.cssText = 'flex-shrink: 0; height: 60px;';
-    const title = document.createElement('span');
-    title.textContent = '블라인드 평점 수집';
-    title.style.margin = '0 0 10px 0';
-    header.appendChild(title);
-    const tableHeader = document.createElement('div');
-    tableHeader.style.cssText = `display: flex; padding: 5px 0; border-bottom: 1px solid #ccc; flex-shrink: 0; user-select: none;`;
-    tableHeader.innerHTML = `<div id="sort-by-name" style="flex: 4; cursor: pointer;">회사명</div><div id="sort-by-rating" style="flex: 1; text-align: center; cursor: pointer;">평점</div><div style="flex: 3; text-align: center;">바로가기</div>`;
-    header.appendChild(tableHeader);
-    this.list = document.createElement('div');
-    this.list.style.cssText = `overflow-y: auto; flex-grow: 1;`;
-    const footer = document.createElement('div');
-    footer.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-top: 10px; flex-shrink: 0;';
-    this.statusElement = document.createElement('span');
-    const buttonGroup = document.createElement('div');
-    buttonGroup.innerHTML = `
-      <button id="start-scan-in-drawer" style="padding: 5px 10px; font-size: 0.9em;">수집 시작</button>
-      <button id="pause-scan" title="수집 정지" style="padding: 5px 10px; font-size: 0.9em; display: none;">수집 정지</button>
-      <button id="resume-scan" title="다시 시작" style="padding: 5px 10px; font-size: 0.9em; display: none;">다시 시작</button>
-      <button id="close-drawer" title="닫기">X</button>
-    `;
-    buttonGroup.querySelectorAll('button').forEach(btn => btn.style.marginLeft = '5px');
-    footer.appendChild(this.statusElement);
-    footer.appendChild(buttonGroup);
-    this.drawer.appendChild(header); 
-    this.drawer.appendChild(this.list);
-    this.drawer.appendChild(footer);
-    document.body.appendChild(this.drawer);
 
+    const drawerHtml = `
+      <div id="blind-rating-drawer" style="position: fixed; top: 0; right: 0; width: 500px; height: 100%; background-color: white; border-left: 1px solid #e0e0e0; box-shadow: -2px 0 5px rgba(0,0,0,0.1); z-index: 9999; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box;">
+        <div style="flex-shrink: 0; height: 60px;">
+          <span style="margin: 0 0 10px 0;">블라인드 평점 수집</span>
+          <div style="display: flex; padding: 5px 0; border-bottom: 1px solid #ccc; flex-shrink: 0; user-select: none;">
+            <div id="sort-by-name" style="flex: 4; cursor: pointer;">회사명</div>
+            <div id="sort-by-rating" style="flex: 1; text-align: center; cursor: pointer;">평점</div>
+            <div style="flex: 3; text-align: center;">바로가기</div>
+          </div>
+        </div>
+        <div id="blind-rating-list" style="overflow-y: auto; flex-grow: 1;"></div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; flex-shrink: 0;">
+          <span id="blind-rating-status"></span>
+          <div>
+            <button id="start-scan-in-drawer" style="padding: 5px 10px; font-size: 0.9em;">수집 시작</button>
+            <button id="pause-scan" title="수집 정지" style="padding: 5px 10px; font-size: 0.9em; display: none;">수집 정지</button>
+            <button id="resume-scan" title="다시 시작" style="padding: 5px 10px; font-size: 0.9em; display: none;">다시 시작</button>
+            <button id="close-drawer" title="닫기">X</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', drawerHtml);
+    this.drawer = document.getElementById('blind-rating-drawer');
+    this.list = document.getElementById('blind-rating-list');
+    this.statusElement = document.getElementById('blind-rating-status');
+
+    // Attach event listeners
     this.drawer.querySelector('#sort-by-name').onclick = () => this.sortItems('name');
     this.drawer.querySelector('#sort-by-rating').onclick = () => this.sortItems('rating');
+    this.drawer.querySelector('#start-scan-in-drawer').onclick = () => console.log('Start Scan Clicked'); // Placeholder
+    this.drawer.querySelector('#pause-scan').onclick = () => console.log('Pause Scan Clicked'); // Placeholder
+    this.drawer.querySelector('#resume-scan').onclick = () => console.log('Resume Scan Clicked'); // Placeholder
+    this.drawer.querySelector('#close-drawer').onclick = () => this.hide(); // Assuming a hide method exists or will be added
+
+    // Apply margin-left to buttons
+    this.drawer.querySelectorAll('button').forEach(btn => btn.style.marginLeft = '5px');
 
     this.createOpenButton();
   },
@@ -91,34 +95,29 @@ const DrawerManager = {
   },
 
   addItem: function(companyName) {
-    const row = document.createElement('div');
-    row.style.cssText = `display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee;`;
-    const nameCell = document.createElement('div');
-    nameCell.style.cssText = 'flex: 4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;';
-    nameCell.textContent = companyName;
-    const ratingCell = document.createElement('div');
-    ratingCell.style.cssText = 'flex: 1; text-align: center;';
-    ratingCell.textContent = '대기 중...';
-    const linkCell = document.createElement('div');
-    linkCell.style.cssText = 'flex: 3; text-align: center;';
+    const itemHtml = `
+      <div class="drawer-item-row" style="display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee;">
+        <div class="drawer-item-name" style="flex: 4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${companyName}</div>
+        <div class="drawer-item-rating" style="flex: 1; text-align: center;">대기 중...</div>
+        <div class="drawer-item-links" style="flex: 3; text-align: center;">
+          <button class="blind-link-button" data-company="${companyName}" style="color: #0077cc; text-decoration: underline; cursor: pointer; border: none; background: none; padding: 0;">리뷰 보기</button>
+          <button class="jobkorea-link-button" data-company="${companyName}" style="color: #0077cc; text-decoration: underline; cursor: pointer; border: none; background: none; padding: 0; margin-left: 8px;">잡코리아 정보 보기</button>
+        </div>
+      </div>
+    `;
+    this.list.insertAdjacentHTML('beforeend', itemHtml);
+    const newRow = this.list.lastElementChild; // Get the newly added row
+    const blindLinkButton = newRow.querySelector('.blind-link-button');
+    const jobKoreaLinkButton = newRow.querySelector('.jobkorea-link-button');
 
-    // 리뷰 보기 버튼을 addItem 시점에 추가
-    const blindLinkButton = document.createElement('button');
-    blindLinkButton.textContent = '리뷰 보기';
-    blindLinkButton.style.cssText = `color: #0077cc; text-decoration: underline; cursor: pointer; border: none; background: none; padding: 0;`;
-    blindLinkButton.onclick = () => window.open(`https://www.teamblind.com/kr/company/${encodeURIComponent(extractCompanyName(companyName))}/reviews`, '_blank');
-    linkCell.appendChild(blindLinkButton);
+    if (blindLinkButton) {
+      blindLinkButton.onclick = () => window.open(`https://www.teamblind.com/kr/company/${encodeURIComponent(extractCompanyName(companyName))}/reviews`, '_blank');
+    }
+    if (jobKoreaLinkButton) {
+      jobKoreaLinkButton.onclick = () => window.open(`https://www.jobkorea.co.kr/Search/?stext=${encodeURIComponent(extractCompanyName(companyName))}&tabType=corp&Page_No=1`, '_blank');
+    }
 
-    // 잡코리아 정보 보기 버튼 추가
-    const jobKoreaLinkButton = document.createElement('button');
-    jobKoreaLinkButton.textContent = '잡코리아 정보 보기';
-    jobKoreaLinkButton.style.cssText = `color: #0077cc; text-decoration: underline; cursor: pointer; border: none; background: none; padding: 0; margin-left: 8px;`;
-    jobKoreaLinkButton.onclick = () => window.open(`https://www.jobkorea.co.kr/Search/?stext=${encodeURIComponent(extractCompanyName(companyName))}&tabType=corp&Page_No=1`, '_blank');
-    linkCell.appendChild(jobKoreaLinkButton);
-
-    row.appendChild(nameCell); row.appendChild(ratingCell); row.appendChild(linkCell);
-    this.list.appendChild(row);
-    this.items.push({ name: companyName, rating: null, element: row });
+    this.items.push({ name: companyName, rating: null, element: newRow });
   },
 
   updateItem: function(companyName, rating) {
