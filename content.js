@@ -73,6 +73,8 @@ const getOneCompany = async () => {
 const JobScanner = {
   isScanning: false, isPaused: false, totalCompanies: 0, completedCompanies: 0, ratingsCache: {},
   isDrawerInitialized: false,
+  jobListObserver: null,
+  reinjectTimer: null,
 
   pause: function() {
     this.isPaused = true;
@@ -193,24 +195,49 @@ const JobScanner = {
     document.getElementById('pause-scan').style.display = 'none';
     document.getElementById('resume-scan').style.display = 'none';
 
-    // Iterate through ratingsCache and inject ratings into company cards
+    this.reinjectRatings();
+    addBlindReviewSortButton();
+  },
+
+  reinjectRatings: function() {
     for (const name in this.ratingsCache) {
       const rating = this.ratingsCache[name];
-      if (rating !== 'N/A') { // Only inject if it's a valid rating
+      if (rating !== 'N/A') {
         document.querySelectorAll(`button[data-company-name="${name}"]`).forEach(btn => {
           const container = btn.parentElement.parentElement;
-          UIManager.injectRating(container, rating, name);
+          // Check if the rating is already injected to avoid duplicates
+          if (!container.querySelector('.blind-score')) {
+            UIManager.injectRating(container, rating, name);
+          }
         });
       }
     }
-    // const jobListUl = document.querySelector('ul[data-cy="job-list"]');
-    // if (jobListUl) {
-    //   sortJobList(jobListUl);
-    // }
   },
 
   init: async function() {
     this.ratingsCache = await StorageManager.load();
+
+    const isListingPage = window.location.pathname.startsWith('/wdlist');
+    if (isListingPage) {
+      // Set up MutationObserver for the job list
+      const targetNode = document.querySelector('ul[data-cy="job-list"]');
+      if (targetNode) {
+        const config = { childList: true, subtree: false }; // Observe direct children
+
+        const callback = (mutationsList, observer) => {
+          // Debounce the re-injection logic
+          clearTimeout(this.reinjectTimer);
+          this.reinjectTimer = setTimeout(() => {
+            console.log('Job list changed, re-injecting ratings...');
+            this.reinjectRatings();
+          }, 500); // Debounce by 500ms
+        };
+
+        this.jobListObserver = new MutationObserver(callback);
+        this.jobListObserver.observe(targetNode, config);
+      }
+    }
+
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       if (request.type === 'SHOW_DRAWER') {
         if (!this.isDrawerInitialized) {
@@ -248,7 +275,7 @@ const JobScanner = {
 
   if (isListingPage) {
     JobScanner.init();
-    addBlindReviewSortButton();
+    
   } else if (isDetailPage) {
     await getOneCompany(); // Call the standalone function
   } else {
