@@ -36,8 +36,8 @@ const DrawerManager = {
         <div style="flex-shrink: 0; height: 60px;">
           <div style="display: flex; justify-content: space-between;">
             <span style="flex: 1;" id="blind-rating-status"></span>
-            <div >
-              <button id="close-drawer" title="닫기">X</button>
+            <div>
+              <button id="close-drawer" title="닫기">닫기</button>
             </div>
           </div>
 
@@ -52,7 +52,7 @@ const DrawerManager = {
         <div id="blind-rating-list" style="overflow-y: auto; flex-grow: 1; border-bottom: 1px solid #ccc;"></div>
         
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; flex-shrink: 0;">
-          <button id="toggle-chart-btn" title="차트 보기">📊 차트 보기</button>
+          <button id="toggle-chart-btn" title="차트 보기">차트 보기</button>
         </div>
 
         <div id="blind-rating-chart" style="flex: 0 0 30%; padding: 10px; overflow: hidden; display: none;">
@@ -284,7 +284,7 @@ const DrawerManager = {
       // Show chart
       this.chartContainer.style.display = 'block';
       this.list.style.flex = '1 1 auto';
-      toggleBtn.textContent = '📊 차트 숨기기';
+      toggleBtn.textContent = '차트 숨기기';
       toggleBtn.title = '차트 숨기기';
 
       // Update chart immediately and start interval
@@ -294,7 +294,7 @@ const DrawerManager = {
       // Hide chart
       this.chartContainer.style.display = 'none';
       this.list.style.flex = '1 1 auto';
-      toggleBtn.textContent = '📊 차트 보기';
+      toggleBtn.textContent = '차트 보기';
       toggleBtn.title = '차트 보기';
 
       // Stop interval updates

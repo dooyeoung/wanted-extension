@@ -150,7 +150,7 @@ const ChartManager = {
                             callback: function (value) {
                                 // Hide 5.5 label
                                 if (value === 5.5) return '';
-                                return value;
+                                return value.toFixed(1);
                             }
                         }
                     },
