@@ -3,12 +3,33 @@
   "name": "Wanted + Blind Score",
   "version": "1.0",
   "description": "원티드 회사 목록에 블라인드 점수를 함께 표시합니다.",
-  "permissions": ["activeTab", "scripting", "storage", "tabs"],
-  "host_permissions": ["https://www.wanted.co.kr/*", "http://localhost:3000/*",  "https://www.teamblind.com/*", "https://insight.wanted.co.kr/*"],
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://www.wanted.co.kr/*",
+    "http://localhost:3000/*",
+    "https://www.teamblind.com/*",
+    "https://insight.wanted.co.kr/*"
+  ],
   "content_scripts": [
     {
-      "matches": ["https://www.wanted.co.kr/*"],
-      "js": ["storage.js", "drawer.js", "ui.js", "api.js", "content.js"]
+      "matches": [
+        "https://www.wanted.co.kr/*"
+      ],
+      "js": [
+        "chart.min.js",
+        "storage.js",
+        "api.js",
+        "ui.js",
+        "drawer.js",
+        "chart.js",
+        "content.js"
+      ],
+      "run_at": "document_idle"
     }
   ],
   "background": {

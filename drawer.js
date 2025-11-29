@@ -14,7 +14,14 @@ const DrawerManager = {
     const drawerHtml = `
       <div id="blind-rating-drawer" style="position: fixed; top: 0; right: 0; width: 650px; height: 100%; background-color: white; border-left: 1px solid #e0e0e0; box-shadow: -2px 0 5px rgba(0,0,0,0.1); z-index: 9999; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box;">
         <div style="flex-shrink: 0; height: 60px;">
-          <span style="margin: 0 0 10px 0;">블라인드 평점 수집</span>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="flex: 1;">블라인드 평점 수집</span>
+            <span style="flex: 1;" id="blind-rating-status"></span>
+            <div >
+              <button id="close-drawer" title="닫기">X</button>
+            </div>
+          </div>
+
           <div style="display: flex; padding: 5px 0; border-bottom: 1px solid #ccc; flex-shrink: 0; user-select: none; font-size: 0.9em;">
             <div id="sort-by-name" style="flex: 3; cursor: pointer;">회사명</div>
             <div id="sort-by-rating" style="flex: 1; text-align: center; cursor: pointer;">평점</div>
@@ -23,12 +30,14 @@ const DrawerManager = {
             <div id="sort-by-netincome" style="flex: 1; text-align: center; cursor: pointer;">순익</div>
           </div>
         </div>
-        <div id="blind-rating-list" style="overflow-y: auto; flex-grow: 1;"></div>
+        <div id="blind-rating-list" style="overflow-y: auto; flex-grow: 1; border-bottom: 1px solid #ccc;"></div>
+        
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; flex-shrink: 0;">
-          <span id="blind-rating-status"></span>
-          <div>
-            <button id="close-drawer" title="닫기">X</button>
-          </div>
+          <button id="toggle-chart-btn" title="차트 보기">📊 차트 보기</button>
+        </div>
+
+        <div id="blind-rating-chart" style="flex: 0 0 30%; padding: 10px; overflow: hidden; display: none;">
+          <canvas id="company-chart"></canvas>
         </div>
       </div>
     `;
@@ -36,14 +45,19 @@ const DrawerManager = {
     document.body.insertAdjacentHTML('beforeend', drawerHtml);
     this.drawer = document.getElementById('blind-rating-drawer');
     this.list = document.getElementById('blind-rating-list');
+    this.chartContainer = document.getElementById('blind-rating-chart');
     this.statusElement = document.getElementById('blind-rating-status');
+    this.chartVisible = false;
+    this.chartUpdateInterval = null;
 
     // Attach event listeners
     this.drawer.querySelector('#sort-by-name').onclick = () => this.sortItems('name');
     this.drawer.querySelector('#sort-by-rating').onclick = () => this.sortItems('rating');
     this.drawer.querySelector('#sort-by-netincome').onclick = () => this.sortItems('netIncome');
+    this.drawer.querySelector('#toggle-chart-btn').onclick = () => this.toggleChart();
     this.drawer.querySelector('#close-drawer').onclick = () => {
       this.drawer.style.display = 'none';
+      this.stopChartUpdates();
       this.updateButtonAndStatusDisplay();
     };
 
@@ -51,6 +65,9 @@ const DrawerManager = {
     this.drawer.querySelectorAll('button').forEach(btn => btn.style.marginLeft = '5px');
 
     this.createOpenButton();
+
+    // Initialize chart (but don't show it)
+    this.initializeChart();
   },
 
   createOpenButton: function () {
@@ -222,6 +239,66 @@ const DrawerManager = {
     if (targetHeader) {
       const arrow = this.sortState.direction === 'asc' ? ' ▲' : ' ▼';
       targetHeader.textContent += arrow;
+    }
+  },
+
+  initializeChart: async function () {
+    try {
+      await ChartManager.loadChartJs();
+      console.log('[DrawerManager] Chart.js loaded successfully');
+    } catch (error) {
+      console.error('[DrawerManager] Failed to load Chart.js:', error);
+    }
+  },
+
+  toggleChart: function () {
+    this.chartVisible = !this.chartVisible;
+    const toggleBtn = this.drawer.querySelector('#toggle-chart-btn');
+
+    if (this.chartVisible) {
+      // Show chart
+      this.chartContainer.style.display = 'block';
+      this.list.style.flex = '1 1 auto';
+      toggleBtn.textContent = '📊 차트 숨기기';
+      toggleBtn.title = '차트 숨기기';
+
+      // Update chart immediately and start interval
+      this.updateChart();
+      this.startChartUpdates();
+    } else {
+      // Hide chart
+      this.chartContainer.style.display = 'none';
+      this.list.style.flex = '1 1 auto';
+      toggleBtn.textContent = '📊 차트 보기';
+      toggleBtn.title = '차트 보기';
+
+      // Stop interval updates
+      this.stopChartUpdates();
+    }
+  },
+
+  startChartUpdates: function () {
+    // Clear any existing interval
+    this.stopChartUpdates();
+
+    // Update chart every 1 second
+    this.chartUpdateInterval = setInterval(() => {
+      if (this.chartVisible) {
+        this.updateChart();
+      }
+    }, 1000);
+  },
+
+  stopChartUpdates: function () {
+    if (this.chartUpdateInterval) {
+      clearInterval(this.chartUpdateInterval);
+      this.chartUpdateInterval = null;
+    }
+  },
+
+  updateChart: function () {
+    if (this.items.length > 0 && window.Chart) {
+      ChartManager.createScatterPlot(this.items, 'company-chart');
     }
   },
 
