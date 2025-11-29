@@ -3,7 +3,23 @@ const DrawerManager = {
   drawer: null, list: null, openButton: null, statusElement: null, items: [],
   sortState: { key: null, direction: 'desc' },
   latestStatus: { type: 'progress', completed: 0, total: 0 },
+  isFullHidden: false,
 
+  hide: function () {
+    this.isFullHidden = false;
+    if (this.drawer) this.drawer.style.display = 'none';
+    if (this.openButton) this.openButton.style.display = 'block';
+  },
+  hideFull: function () {
+    this.isFullHidden = true;
+    if (this.drawer) this.drawer.style.display = 'none';
+    if (this.openButton) this.openButton.style.display = 'none';
+  },
+  show: function () {
+    this.isFullHidden = false;
+    if (this.drawer) this.drawer.style.display = 'flex';
+    if (this.openButton) this.openButton.style.display = 'none';
+  },
   create: function () {
     if (this.drawer) {
       this.drawer.style.display = 'flex';
@@ -12,7 +28,11 @@ const DrawerManager = {
     }
 
     const drawerHtml = `
-      <div id="blind-rating-drawer" style="position: fixed; top: 0; right: 0; width: 650px; height: 100%; background-color: white; border-left: 1px solid #e0e0e0; box-shadow: -2px 0 5px rgba(0,0,0,0.1); z-index: 9999; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box;">
+      <div id="blind-rating-drawer" 
+        style="position: fixed; top: 0; right: 0; width: 650px; height: 100%; background-color: white; 
+        border-left: 1px solid #e0e0e0; box-shadow: -2px 0 5px rgba(0,0,0,0.1); z-index: 9999; 
+        display: flex; flex-direction: column; padding: 10px; box-sizing: border-box;"
+      >
         <div style="flex-shrink: 0; height: 60px;">
           <div style="display: flex; justify-content: space-between;">
             <span style="flex: 1;" id="blind-rating-status"></span>
@@ -91,6 +111,13 @@ const DrawerManager = {
 
   updateButtonAndStatusDisplay: function () {
     if (!this.drawer || !this.openButton) return;
+
+    if (this.isFullHidden) {
+      this.drawer.style.display = 'none';
+      this.openButton.style.display = 'none';
+      return;
+    }
+
     const statusText = this.formatStatusText(this.latestStatus);
     const statusColor = this.latestStatus.color || 'blue';
     if (this.drawer.style.display === 'none') {
@@ -244,7 +271,6 @@ const DrawerManager = {
   initializeChart: async function () {
     try {
       await ChartManager.loadChartJs();
-      console.log('[DrawerManager] Chart.js loaded successfully');
     } catch (error) {
       console.error('[DrawerManager] Failed to load Chart.js:', error);
     }
