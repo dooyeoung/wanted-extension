@@ -29,6 +29,8 @@
         "ui.js",
         "drawer.js",
         "chart.js",
+        "utils.js",
+        "detail.js",
         "content.js"
       ],
       "run_at": "document_idle"
