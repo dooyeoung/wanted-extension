@@ -218,7 +218,26 @@ const JobScanner = {
       const id = button.getAttribute('data-company-id'); // Extract ID
       if (!name) return;
 
-      // 1. Injection: Always try to inject if cached (handles multiple cards/re-renders)
+      // 1. Discovery: If new to this session, add to drawer and queue
+      if (!this.processedCompanies.has(name)) {
+        this.processedCompanies.add(name);
+        this.totalCompanies++;
+        newFound = true;
+
+        DrawerManager.addItem(name, id);
+
+        if (this.ratingsCache[name]) {
+          // Even if cached, we queue it to fetch regNoHash, but skip rating fetch
+          this.queue.push({ name, id, skipRating: true });
+        } else {
+          this.queue.push({ name, id, skipRating: false }); // Push object with ID
+          // Inject LOADING state immediately
+          const container = button.parentElement.parentElement;
+          UIManager.injectRating(container, 'LOADING', name);
+        }
+      }
+
+      // 2. Injection: Always try to inject if cached (handles multiple cards/re-renders)
       if (this.ratingsCache[name]) {
         let rating = this.ratingsCache[name];
         let financial = undefined;
@@ -236,25 +255,6 @@ const JobScanner = {
         // Also update drawer for cached items if it's not already updated by processNextItem
         // This ensures the drawer reflects the state immediately on scan if cached.
         DrawerManager.updateItem(name, rating, financial);
-      }
-
-      // 2. Discovery: If new to this session, add to drawer and queue
-      if (!this.processedCompanies.has(name)) {
-        this.processedCompanies.add(name);
-        this.totalCompanies++;
-        newFound = true;
-
-        DrawerManager.addItem(name, id);
-
-        if (this.ratingsCache[name]) {
-          // Even if cached, we queue it to fetch regNoHash, but skip rating fetch
-          this.queue.push({ name, id, skipRating: true });
-        } else {
-          this.queue.push({ name, id, skipRating: false }); // Push object with ID
-          // Inject LOADING state immediately
-          const container = button.parentElement.parentElement;
-          UIManager.injectRating(container, 'LOADING', name);
-        }
       }
     });
 

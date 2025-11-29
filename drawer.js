@@ -183,7 +183,7 @@ const DrawerManager = {
 
       if (netIncome > 0) {
         // Positive Net Income -> Red Background (Light Red for readability)
-        cells.forEach(cell => cell.style.backgroundColor = '#FFF0F0');
+        cells.forEach(cell => cell.style.backgroundColor = 'rgb(158 237 184)');
       } else if (netIncome < 0) {
         // Negative Net Income -> Gray Background
         cells.forEach(cell => cell.style.backgroundColor = '#F5F5F5');
