@@ -66,7 +66,6 @@ function addBlindReviewSortButton() {
 const getOneCompany = async () => {
   // Placeholder selectors - these need to be verified by inspecting a Wanted detail page
   const companyName = document.querySelector('a[data-company-name]').textContent;
-  console.log(companyName);
 };
 
 // --- API 모듈 ---
@@ -89,8 +88,10 @@ const JobScanner = {
   },
 
   processNextItem: async function () {
-    const name = this.queue.shift();
-    if (!name) return;
+    const item = this.queue.shift();
+    if (!item) return;
+
+    const { name, id, skipRating } = item;
 
     this.activeRequests++;
 
@@ -107,8 +108,74 @@ const JobScanner = {
         DrawerManager.updateStatus({ type: 'progress', completed: this.completedCompanies, total: this.totalCompanies });
       };
 
-      if (this.ratingsCache[name]) {
-        processRating(this.ratingsCache[name]);
+      // Fetch regNoHash if we have an ID
+      if (id) {
+        chrome.runtime.sendMessage(
+          { type: 'FETCH_WANTED_COMPANY_INFO', companyId: id },
+          (response) => {
+            if (response && response.success) {
+              console.log(`[WantedRating] Company: ${name}, Hash: ${response.regNoHash}`);
+
+              // Update cache with hash
+              if (!this.ratingsCache[name]) this.ratingsCache[name] = { rating: 'N/A' };
+              // Handle legacy string cache
+              if (typeof this.ratingsCache[name] !== 'object') this.ratingsCache[name] = { rating: this.ratingsCache[name] };
+
+              this.ratingsCache[name].regNoHash = response.regNoHash;
+              StorageManager.save(this.ratingsCache);
+
+              // Fetch Financial Data
+              chrome.runtime.sendMessage(
+                { type: 'FETCH_FINANCIAL_REPORT', regNoHash: response.regNoHash },
+                (finResponse) => {
+                  if (finResponse && finResponse.success && finResponse.data && finResponse.data.financialReport) {
+                    const report = finResponse.data.financialReport;
+                    if (report.length > 0) {
+                      const lastReport = report[report.length - 1];
+                      const { year, operatingIncome, netIncome, salesAmount } = lastReport;
+
+                      console.log(`[WantedRating] Financial for ${name}:`, { year, operatingIncome, netIncome, salesAmount });
+
+                      // Update cache with financial data
+                      if (this.ratingsCache[name]) {
+                        this.ratingsCache[name].financial = { year, operatingIncome, netIncome, salesAmount };
+                        StorageManager.save(this.ratingsCache);
+
+                        // Update Drawer
+                        DrawerManager.updateItem(name, undefined, this.ratingsCache[name].financial);
+                      }
+                    }
+                  } else {
+                    console.warn(`[WantedRating] Failed to get financial data for ${name}:`, finResponse?.error);
+                  }
+                }
+              );
+
+            } else {
+              console.warn(`[WantedRating] Failed to get hash for ${name}:`, response?.error);
+            }
+          }
+        );
+      }
+
+      if (skipRating) {
+        this.completedCompanies++;
+        return;
+      }
+
+      // Check cache again (it might have been updated with hash above)
+      let cachedRating = this.ratingsCache[name];
+      let cachedFinancial = undefined;
+
+      // Normalize to string if object
+      if (typeof cachedRating === 'object') {
+        cachedFinancial = cachedRating.financial;
+        cachedRating = cachedRating.rating;
+      }
+
+      if (cachedRating && cachedRating !== 'N/A') {
+        processRating(cachedRating);
+        if (cachedFinancial) DrawerManager.updateItem(name, undefined, cachedFinancial);
       } else {
         // Randomized Jitter: 200ms - 600ms
         const delay = Math.floor(Math.random() * (600 - 200 + 1) + 200);
@@ -117,12 +184,20 @@ const JobScanner = {
         const result = await BlindAPI.fetchReview(extractCompanyName(name));
         const { rating } = result;
 
-        // Simple backoff check: if we get a specific error signal (requires API update) or just rely on jitter.
-        // For now, we proceed.
+        // Update cache with rating, preserving hash if exists
+        if (!this.ratingsCache[name]) this.ratingsCache[name] = { rating: 'N/A' };
+        if (typeof this.ratingsCache[name] !== 'object') this.ratingsCache[name] = { rating: this.ratingsCache[name] };
 
-        this.ratingsCache[name] = rating;
+        this.ratingsCache[name].rating = rating;
+
         await StorageManager.save(this.ratingsCache);
         processRating(rating);
+        // Financial might have been updated asynchronously, so we don't pass it here explicitly unless we re-read cache,
+        // but processRating calls updateItem which might overwrite? No, updateItem handles partial updates.
+        // Let's re-read cache just in case financial came in fast.
+        if (this.ratingsCache[name].financial) {
+          DrawerManager.updateItem(name, undefined, this.ratingsCache[name].financial);
+        }
       }
     } catch (err) {
       console.error(`Error processing ${name}:`, err);
@@ -140,17 +215,27 @@ const JobScanner = {
 
     buttons.forEach(button => {
       const name = button.getAttribute('data-company-name');
+      const id = button.getAttribute('data-company-id'); // Extract ID
       if (!name) return;
 
       // 1. Injection: Always try to inject if cached (handles multiple cards/re-renders)
       if (this.ratingsCache[name]) {
+        let rating = this.ratingsCache[name];
+        let financial = undefined;
+
+        // Handle object structure
+        if (typeof rating === 'object') {
+          financial = rating.financial;
+          rating = rating.rating;
+        }
+
         const container = button.parentElement.parentElement;
-        if (this.ratingsCache[name] !== 'N/A') {
-          UIManager.injectRating(container, this.ratingsCache[name], name);
+        if (rating !== 'N/A') {
+          UIManager.injectRating(container, rating, name);
         }
         // Also update drawer for cached items if it's not already updated by processNextItem
         // This ensures the drawer reflects the state immediately on scan if cached.
-        DrawerManager.updateItem(name, this.ratingsCache[name]);
+        DrawerManager.updateItem(name, rating, financial);
       }
 
       // 2. Discovery: If new to this session, add to drawer and queue
@@ -159,13 +244,13 @@ const JobScanner = {
         this.totalCompanies++;
         newFound = true;
 
-        DrawerManager.addItem(name);
+        DrawerManager.addItem(name, id);
 
         if (this.ratingsCache[name]) {
-          // Already handled injection above, just count it as completed
-          this.completedCompanies++;
+          // Even if cached, we queue it to fetch regNoHash, but skip rating fetch
+          this.queue.push({ name, id, skipRating: true });
         } else {
-          this.queue.push(name);
+          this.queue.push({ name, id, skipRating: false }); // Push object with ID
           // Inject LOADING state immediately
           const container = button.parentElement.parentElement;
           UIManager.injectRating(container, 'LOADING', name);

@@ -12,13 +12,16 @@ const DrawerManager = {
     }
 
     const drawerHtml = `
-      <div id="blind-rating-drawer" style="position: fixed; top: 0; right: 0; width: 500px; height: 100%; background-color: white; border-left: 1px solid #e0e0e0; box-shadow: -2px 0 5px rgba(0,0,0,0.1); z-index: 9999; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box;">
+      <div id="blind-rating-drawer" style="position: fixed; top: 0; right: 0; width: 650px; height: 100%; background-color: white; border-left: 1px solid #e0e0e0; box-shadow: -2px 0 5px rgba(0,0,0,0.1); z-index: 9999; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box;">
         <div style="flex-shrink: 0; height: 60px;">
           <span style="margin: 0 0 10px 0;">블라인드 평점 수집</span>
-          <div style="display: flex; padding: 5px 0; border-bottom: 1px solid #ccc; flex-shrink: 0; user-select: none;">
-            <div id="sort-by-name" style="flex: 4; cursor: pointer;">회사명</div>
+          <div style="display: flex; padding: 5px 0; border-bottom: 1px solid #ccc; flex-shrink: 0; user-select: none; font-size: 0.9em;">
+            <div id="sort-by-name" style="flex: 3; cursor: pointer;">회사명</div>
             <div id="sort-by-rating" style="flex: 1; text-align: center; cursor: pointer;">평점</div>
-            <div style="flex: 3; text-align: center;">바로가기</div>
+            <div style="flex: 0.5; text-align: center;">리뷰</div>
+            <div style="flex: 1; text-align: center;">매출</div>
+            <div style="flex: 1; text-align: center;">영업</div>
+            <div style="flex: 1; text-align: center;">순익</div>
           </div>
         </div>
         <div id="blind-rating-list" style="overflow-y: auto; flex-grow: 1;"></div>
@@ -91,42 +94,103 @@ const DrawerManager = {
     this.updateButtonAndStatusDisplay();
   },
 
-  addItem: function (companyName) {
+  formatMoney: function (amount) {
+    if (!amount) return '-';
+    const absAmount = Math.abs(amount);
+
+    // 1조 이상
+    if (absAmount >= 1000000000000) {
+      let val = (amount / 1000000000000).toFixed(1);
+      if (val.endsWith('.0')) val = val.slice(0, -2);
+      return val + '조';
+    }
+    // 1000만 이상 (0.1억) -> 억 단위로 표시
+    if (absAmount >= 10000000) {
+      let val = (amount / 100000000).toFixed(1);
+      if (val.endsWith('.0')) val = val.slice(0, -2);
+      return val + '억';
+    }
+    return amount.toLocaleString();
+  },
+
+  addItem: function (companyName, companyId) {
     const itemHtml = `
-      <div class="drawer-item-row" style="display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee;">
-        <div class="drawer-item-name" style="flex: 4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${companyName}</div>
+      <div class="drawer-item-row" style="display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 0.9em;">
+        <div class="drawer-item-name" style="flex: 3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; text-decoration: underline;" title="원티드 상세 페이지 이동">${companyName}</div>
         <div class="drawer-item-rating" style="flex: 1; text-align: center;">대기 중...</div>
-        <div class="drawer-item-links" style="flex: 3; text-align: center;">
-          <button class="blind-link-button" data-company="${companyName}" style="color: #0077cc; text-decoration: underline; cursor: pointer; border: none; background: none; padding: 0;">리뷰 보기</button>
+        <div class="drawer-item-review" style="flex: 0.5; text-align: center; cursor: pointer;">
+            <img src="https://static.teamblind.com/img/www/favicon.ico" width="16" height="16" style="vertical-align: middle;" title="블라인드 리뷰 보기">
         </div>
+        <div class="drawer-item-sales" style="flex: 1; text-align: center;">-</div>
+        <div class="drawer-item-op" style="flex: 1; text-align: center;">-</div>
+        <div class="drawer-item-net" style="flex: 1; text-align: center;">-</div>
       </div>
     `;
     this.list.insertAdjacentHTML('beforeend', itemHtml);
     const newRow = this.list.lastElementChild; // Get the newly added row
-    const blindLinkButton = newRow.querySelector('.blind-link-button');
-    const jobKoreaLinkButton = newRow.querySelector('.jobkorea-link-button');
 
-    if (blindLinkButton) {
-      blindLinkButton.onclick = () => window.open(`https://www.teamblind.com/kr/company/${encodeURIComponent(extractCompanyName(companyName))}/reviews`, '_blank');
-    }
-    if (jobKoreaLinkButton) {
-      jobKoreaLinkButton.onclick = () => window.open(`https://www.jobkorea.co.kr/Search/?stext=${encodeURIComponent(extractCompanyName(companyName))}&tabType=corp&Page_No=1`, '_blank');
+    // Add click listener to review cell (icon)
+    const reviewCell = newRow.querySelector('.drawer-item-review');
+    reviewCell.onclick = () => window.open(`https://www.teamblind.com/kr/company/${encodeURIComponent(extractCompanyName(companyName))}/reviews`, '_blank');
+
+    // Add click listener to name cell
+    const nameCell = newRow.querySelector('.drawer-item-name');
+    if (companyId) {
+      nameCell.onclick = () => window.open(`https://www.wanted.co.kr/company/${companyId}`, '_blank');
+    } else {
+      nameCell.style.cursor = 'default';
+      nameCell.style.textDecoration = 'none';
+      nameCell.title = '';
     }
 
-    this.items.push({ name: companyName, rating: null, element: newRow });
+    this.items.push({ name: companyName, rating: null, financial: null, element: newRow });
   },
 
-  updateItem: function (companyName, rating) {
+  updateItem: function (companyName, rating, financial) {
     const item = this.items.find(it => it.name === companyName);
     if (!item) return;
-    item.rating = rating;
-    const ratingCell = item.element.children[1];
+
+    if (rating !== undefined) item.rating = rating;
+    if (financial !== undefined) item.financial = financial;
+
+    const ratingCell = item.element.querySelector('.drawer-item-rating');
+    const salesCell = item.element.querySelector('.drawer-item-sales');
+    const opCell = item.element.querySelector('.drawer-item-op');
+    const netCell = item.element.querySelector('.drawer-item-net');
+
     // updateItem에서는 평점 셀만 업데이트
-    if (rating !== 'N/A') {
-      const color = getRatingColor(rating);
-      ratingCell.innerHTML = `<span style="color: ${color}; font-weight: bold;">★ ${rating}</span>`;
-    } else {
-      ratingCell.innerHTML = 'N/A';
+    if (rating !== undefined) {
+      if (rating !== 'N/A') {
+        const color = getRatingColor(rating);
+        ratingCell.innerHTML = `<span style="color: ${color}; font-weight: bold;">★ ${rating}</span>`;
+      } else {
+        ratingCell.innerHTML = 'N/A';
+      }
+    }
+
+    if (financial) {
+      const { salesAmount, operatingIncome, netIncome } = financial;
+      salesCell.textContent = this.formatMoney(salesAmount);
+      opCell.textContent = this.formatMoney(operatingIncome);
+      netCell.textContent = this.formatMoney(netIncome);
+
+      // Reset colors first
+      salesCell.style.color = '';
+      opCell.style.color = '';
+      netCell.style.color = '';
+
+      const cells = [salesCell, opCell, netCell];
+
+      if (netIncome > 0) {
+        // Positive Net Income -> Red Background (Light Red for readability)
+        cells.forEach(cell => cell.style.backgroundColor = '#FFF0F0');
+      } else if (netIncome < 0) {
+        // Negative Net Income -> Gray Background
+        cells.forEach(cell => cell.style.backgroundColor = '#F5F5F5');
+      } else {
+        // Zero or undefined -> No background
+        cells.forEach(cell => cell.style.backgroundColor = 'transparent');
+      }
     }
   },
 
