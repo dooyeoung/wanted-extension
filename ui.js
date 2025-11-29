@@ -44,7 +44,7 @@ const UIManager = {
     // Update content based on rating state
     if (rating === 'LOADING') {
       scoreElement.innerHTML = `
-            <span style="color: #999; font-size: 0.8em;">블라인드 리뷰 수집중...</span>
+            <span style="color: #999;">데이터 수집중...</span>
         `;
     } else {
       const color = getRatingColor(rating);

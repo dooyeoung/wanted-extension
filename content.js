@@ -98,7 +98,7 @@ const JobScanner = {
     try {
       const processRating = (rating) => {
         DrawerManager.updateItem(name, rating);
-        if (rating !== 'N/A') {
+        if (rating !== '-') {
           // Get financial data from cache if available
           let financial = undefined;
           if (this.ratingsCache[name] && typeof this.ratingsCache[name] === 'object') {
@@ -123,7 +123,7 @@ const JobScanner = {
               console.log(`[WantedRating] Company: ${name}, Hash: ${response.regNoHash}`);
 
               // Update cache with hash
-              if (!this.ratingsCache[name]) this.ratingsCache[name] = { rating: 'N/A' };
+              if (!this.ratingsCache[name]) this.ratingsCache[name] = { rating: '-' };
               // Handle legacy string cache
               if (typeof this.ratingsCache[name] !== 'object') this.ratingsCache[name] = { rating: this.ratingsCache[name] };
 
@@ -179,7 +179,7 @@ const JobScanner = {
         cachedRating = cachedRating.rating;
       }
 
-      if (cachedRating && cachedRating !== 'N/A') {
+      if (cachedRating && cachedRating !== '-') {
         processRating(cachedRating);
         if (cachedFinancial) DrawerManager.updateItem(name, undefined, cachedFinancial);
       } else {
@@ -191,7 +191,7 @@ const JobScanner = {
         const { rating } = result;
 
         // Update cache with rating, preserving hash if exists
-        if (!this.ratingsCache[name]) this.ratingsCache[name] = { rating: 'N/A' };
+        if (!this.ratingsCache[name]) this.ratingsCache[name] = { rating: '-' };
         if (typeof this.ratingsCache[name] !== 'object') this.ratingsCache[name] = { rating: this.ratingsCache[name] };
 
         this.ratingsCache[name].rating = rating;
@@ -255,7 +255,7 @@ const JobScanner = {
         }
 
         const container = button.parentElement.parentElement;
-        if (rating !== 'N/A') {
+        if (rating !== '-') {
           UIManager.injectRating(container, rating, name, financial);
         }
         // Also update drawer for cached items if it's not already updated by processNextItem

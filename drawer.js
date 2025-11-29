@@ -161,11 +161,11 @@ const DrawerManager = {
 
     // updateItem에서는 평점 셀만 업데이트
     if (rating !== undefined) {
-      if (rating !== 'N/A') {
+      if (rating !== '-') {
         const color = getRatingColor(rating);
         ratingCell.innerHTML = `<span style="color: ${color}; font-weight: bold;">★ ${rating}</span>`;
       } else {
-        ratingCell.innerHTML = 'N/A';
+        ratingCell.innerHTML = '-';
       }
     }
 
@@ -217,8 +217,8 @@ const DrawerManager = {
     this.items.sort((a, b) => {
       const dir = this.sortState.direction === 'asc' ? 1 : -1;
       if (this.sortState.key === 'rating') {
-        const ratingA = (a.rating && a.rating !== 'N/A') ? parseFloat(a.rating) : -1;
-        const ratingB = (b.rating && b.rating !== 'N/A') ? parseFloat(b.rating) : -1;
+        const ratingA = (a.rating && a.rating !== '-') ? parseFloat(a.rating) : -1;
+        const ratingB = (b.rating && b.rating !== '-') ? parseFloat(b.rating) : -1;
         return (ratingA - ratingB) * dir;
       } else {
         return a.name.localeCompare(b.name) * dir;
