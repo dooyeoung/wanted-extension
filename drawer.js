@@ -20,7 +20,7 @@ const DrawerManager = {
             <div id="sort-by-rating" style="flex: 1; text-align: center; cursor: pointer;">평점</div>
             <div style="flex: 1; text-align: center;">매출</div>
             <div style="flex: 1; text-align: center;">영업</div>
-            <div style="flex: 1; text-align: center;">순익</div>
+            <div id="sort-by-netincome" style="flex: 1; text-align: center; cursor: pointer;">순익</div>
           </div>
         </div>
         <div id="blind-rating-list" style="overflow-y: auto; flex-grow: 1;"></div>
@@ -41,6 +41,7 @@ const DrawerManager = {
     // Attach event listeners
     this.drawer.querySelector('#sort-by-name').onclick = () => this.sortItems('name');
     this.drawer.querySelector('#sort-by-rating').onclick = () => this.sortItems('rating');
+    this.drawer.querySelector('#sort-by-netincome').onclick = () => this.sortItems('netIncome');
     this.drawer.querySelector('#close-drawer').onclick = () => {
       this.drawer.style.display = 'none';
       this.updateButtonAndStatusDisplay();
@@ -199,12 +200,29 @@ const DrawerManager = {
     if (!this.drawer) return; // 오류 방지 가드 추가
     const nameHeader = this.drawer.querySelector('#sort-by-name');
     const ratingHeader = this.drawer.querySelector('#sort-by-rating');
+    const netIncomeHeader = this.drawer.querySelector('#sort-by-netincome');
+
+    // Reset all headers
     nameHeader.textContent = '회사명';
     ratingHeader.textContent = '평점';
+    netIncomeHeader.textContent = '순익';
+
     if (!this.sortState.key) return;
-    const targetHeader = this.sortState.key === 'name' ? nameHeader : ratingHeader;
-    const arrow = this.sortState.direction === 'asc' ? ' ▲' : ' ▼';
-    targetHeader.textContent += arrow;
+
+    // Determine which header to update
+    let targetHeader;
+    if (this.sortState.key === 'name') {
+      targetHeader = nameHeader;
+    } else if (this.sortState.key === 'rating') {
+      targetHeader = ratingHeader;
+    } else if (this.sortState.key === 'netIncome') {
+      targetHeader = netIncomeHeader;
+    }
+
+    if (targetHeader) {
+      const arrow = this.sortState.direction === 'asc' ? ' ▲' : ' ▼';
+      targetHeader.textContent += arrow;
+    }
   },
 
   sortItems: function (key) {
@@ -220,6 +238,10 @@ const DrawerManager = {
         const ratingA = (a.rating && a.rating !== '-') ? parseFloat(a.rating) : -1;
         const ratingB = (b.rating && b.rating !== '-') ? parseFloat(b.rating) : -1;
         return (ratingA - ratingB) * dir;
+      } else if (this.sortState.key === 'netIncome') {
+        const netIncomeA = (a.financial && a.financial.netIncome) ? a.financial.netIncome : -Infinity;
+        const netIncomeB = (b.financial && b.financial.netIncome) ? b.financial.netIncome : -Infinity;
+        return (netIncomeA - netIncomeB) * dir;
       } else {
         return a.name.localeCompare(b.name) * dir;
       }
