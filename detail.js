@@ -69,11 +69,11 @@ const DetailManager = {
         </div>
         <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
           <span style="">영업이익</span>
-          <span style="font-weight: 600;">${formatMoney(operatingIncome)}</span>
+          <span style="font-weight: 600; color: ${operatingIncome > 0 ? '#00a8ff' : (operatingIncome < 0 && netIncome < 0 ? '#ff4d4f' : '#888')};">${formatMoney(operatingIncome)}</span>
         </div>
         <div style="display: flex; justify-content: space-between;">
           <span style="">당기순이익</span>
-          <span style="font-weight: 600;">${formatMoney(netIncome)}</span>
+          <span style="font-weight: 600; color: ${netIncome > 0 ? '#00a8ff' : (operatingIncome < 0 && netIncome < 0 ? '#ff4d4f' : '#888')};">${formatMoney(netIncome)}</span>
         </div>
       `;
 

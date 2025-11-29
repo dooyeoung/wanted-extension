@@ -226,16 +226,14 @@ const DrawerManager = {
 
       const cells = [salesCell, opCell, netCell];
 
+      let bgColor = '#f5f5f5'; // Default Gray
       if (netIncome > 0) {
-        // Positive Net Income -> Red Background (Light Red for readability)
-        cells.forEach(cell => cell.style.backgroundColor = 'rgb(158 237 184)');
-      } else if (netIncome < 0) {
-        // Negative Net Income -> Gray Background
-        cells.forEach(cell => cell.style.backgroundColor = '#F5F5F5');
-      } else {
-        // Zero or undefined -> No background
-        cells.forEach(cell => cell.style.backgroundColor = 'transparent');
+        bgColor = 'rgb(158 237 184)'; // Green
+      } else if (operatingIncome < 0 && netIncome < 0) {
+        bgColor = '#ffccc7'; // Red (light red for background)
       }
+      cells.forEach(cell => cell.style.backgroundColor = bgColor);
+
     }
   },
 

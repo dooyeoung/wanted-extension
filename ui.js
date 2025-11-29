@@ -1,9 +1,7 @@
 // --- UI 렌더링 모듈 (페이지 내 별점 표시) ---
 function getRatingColor(rating) {
   const numericRating = parseFloat(rating);
-  if (numericRating >= 4.0) return 'red';
-  if (numericRating >= 3.0) return 'orange';
-  return 'gray';
+  return 'black';
 }
 
 function formatMoney(amount) {
@@ -61,7 +59,12 @@ const UIManager = {
       let line2Html = '';
       if (financial) {
         const { salesAmount, operatingIncome, netIncome } = financial;
-        const bgColor = netIncome > 0 ? 'rgb(158 237 184)' : (netIncome < 0 ? '#f5f5f5' : 'transparent');
+        let bgColor = '#f5f5f5'; // Default Gray
+        if (netIncome > 0) {
+          bgColor = 'rgb(158 237 184)'; // Green
+        } else if (operatingIncome < 0 && netIncome < 0) {
+          bgColor = '#ffccc7'; // Red (light red for background)
+        }
 
         line2Html = `
           <div style="display: flex; gap: 6px;  border-radius: 3px;">
