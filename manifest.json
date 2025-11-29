@@ -22,6 +22,8 @@
       ],
       "js": [
         "chart.min.js",
+        "hammerjs.min.js",
+        "chartjs-plugin-zoom.min.js",
         "storage.js",
         "api.js",
         "ui.js",

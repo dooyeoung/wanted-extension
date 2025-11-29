@@ -22,14 +22,24 @@ const ChartManager = {
                 const hasFinancial = item.financial && item.financial.netIncome !== undefined;
                 return hasRating && hasFinancial;
             })
-            .map(item => ({
-                x: parseFloat(item.rating),
-                y: item.financial.netIncome / 100000000, // Convert to 억
-                label: item.name,
-                companyId: item.element.querySelector('.drawer-item-name')?.onclick ?
-                    item.element.querySelector('.drawer-item-name').onclick.toString().match(/company\/(\d+)/)?.[1] : null,
-                salesAmount: item.financial.salesAmount || 0
-            }));
+            .map(item => {
+                const rating = parseFloat(item.rating);
+                const netIncome = item.financial.netIncome / 100000000; // Convert to 억
+
+                // Green for rating >= 3.5 AND netIncome > 0, blue otherwise
+                const isGoodCompany = rating >= 3.5 && item.financial.netIncome > 0;
+
+                return {
+                    x: rating,
+                    y: netIncome,
+                    label: item.name,
+                    companyId: item.element.querySelector('.drawer-item-name')?.onclick ?
+                        item.element.querySelector('.drawer-item-name').onclick.toString().match(/company\/(\d+)/)?.[1] : null,
+                    salesAmount: item.financial.salesAmount || 0,
+                    backgroundColor: isGoodCompany ? 'rgba(76, 175, 80, 0.6)' : 'rgba(54, 162, 235, 0.6)', // Green or Blue
+                    borderColor: isGoodCompany ? 'rgba(76, 175, 80, 1)' : 'rgba(54, 162, 235, 1)'
+                };
+            });
 
         if (data.length === 0) {
             console.warn('[ChartManager] No data available for chart');
@@ -42,22 +52,28 @@ const ChartManager = {
             return;
         }
 
-        const ctx = canvas.getContext('2d');
-
-        // Destroy existing chart if any
+        // If chart exists, just update the data
         if (this.chartInstance) {
-            this.chartInstance.destroy();
+            this.chartInstance.data.datasets[0].data = data;
+            this.chartInstance.update('none'); // 'none' mode = no animation
+            return;
         }
 
-        // Create scatter plot
+        const ctx = canvas.getContext('2d');
+
+        // Create scatter plot (first time only)
         this.chartInstance = new Chart(ctx, {
             type: 'scatter',
             data: {
                 datasets: [{
                     label: '회사',
                     data: data,
-                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: (context) => {
+                        return context.raw?.backgroundColor || 'rgba(54, 162, 235, 0.6)';
+                    },
+                    borderColor: (context) => {
+                        return context.raw?.borderColor || 'rgba(54, 162, 235, 1)';
+                    },
                     borderWidth: 1,
                     pointRadius: 6,
                     pointHoverRadius: 8
@@ -85,9 +101,29 @@ const ChartManager = {
                     },
                     title: {
                         display: true,
-                        text: '블라인드 평점 vs 순이익',
+                        text: '블라인드 평점, 순이익',
                         font: {
-                            size: 16
+                            size: 14
+                        }
+                    },
+                    zoom: {
+                        zoom: {
+                            wheel: {
+                                enabled: true,
+                                speed: 0.1
+                            },
+                            pinch: {
+                                enabled: true
+                            },
+                            mode: 'xy'
+                        },
+                        pan: {
+                            enabled: true,
+                            mode: 'xy'
+                        },
+                        limits: {
+                            x: { min: 0, max: 5 },
+                            y: { min: 'original', max: 'original' }
                         }
                     }
                 },
@@ -104,21 +140,26 @@ const ChartManager = {
                             display: true,
                             text: '블라인드 평점',
                             font: {
-                                size: 14
+                                size: 12
                             }
                         },
                         min: 0,
-                        max: 5,
+                        max: 5.5,
                         ticks: {
-                            stepSize: 0.5
+                            stepSize: 0.5,
+                            callback: function (value) {
+                                // Hide 5.5 label
+                                if (value === 5.5) return '';
+                                return value;
+                            }
                         }
                     },
                     y: {
                         title: {
                             display: true,
-                            text: '순이익 (억)',
+                            text: '순이익',
                             font: {
-                                size: 14
+                                size: 12
                             }
                         },
                         ticks: {
@@ -130,14 +171,14 @@ const ChartManager = {
                             }
                         }
                     }
-                },
-                onClick: (event, elements) => {
-                    if (elements.length > 0) {
-                        const index = elements[0].index;
-                        const point = data[index];
-                        if (point.companyId) {
-                            window.open(`https://www.wanted.co.kr/company/${point.companyId}`, '_blank');
-                        }
+                }
+            },
+            onClick: (event, elements) => {
+                if (elements.length > 0) {
+                    const index = elements[0].index;
+                    const point = data[index];
+                    if (point.companyId) {
+                        window.open(`https://www.wanted.co.kr/company/${point.companyId}`, '_blank');
                     }
                 }
             }
