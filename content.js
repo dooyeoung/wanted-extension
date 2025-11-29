@@ -71,218 +71,178 @@ const getOneCompany = async () => {
 
 // --- API 모듈 ---
 const JobScanner = {
-  isScanning: false, isPaused: false, totalCompanies: 0, completedCompanies: 0, ratingsCache: {},
+  queue: [],
+  activeRequests: 0,
+  MAX_CONCURRENCY: 3,
+  totalCompanies: 0,
+  completedCompanies: 0,
+  ratingsCache: {},
   isDrawerInitialized: false,
-  jobListObserver: null,
-  reinjectTimer: null,
+  processedCompanies: new Set(),
+  scrollTimer: null,
 
-  pause: function() {
-    this.isPaused = true;
-    DrawerManager.updateStatus({ text: '일시 정지', color: 'orange' });
-    document.getElementById('pause-scan').style.display = 'none';
-    document.getElementById('resume-scan').style.display = 'inline-block';
+  // Queue Consumer
+  processQueue: function () {
+    while (this.queue.length > 0 && this.activeRequests < this.MAX_CONCURRENCY) {
+      this.processNextItem();
+    }
   },
 
-  resume: function() {
-    this.isPaused = false;
-    DrawerManager.updateStatus({ type: 'progress', completed: this.completedCompanies, total: this.totalCompanies });
-    document.getElementById('pause-scan').style.display = 'inline-block';
-    document.getElementById('resume-scan').style.display = 'none';
-  },
+  processNextItem: async function () {
+    const name = this.queue.shift();
+    if (!name) return;
 
-  startFullScan: async function() {
-    if (this.isScanning) return;
-    this.isScanning = true; this.isPaused = false; this.totalCompanies = 0; this.completedCompanies = 0;
-    
-    DrawerManager.updateStatus({ type: 'progress', completed: 0, total: 0 });
+    this.activeRequests++;
 
-    document.getElementById('start-scan-in-drawer').style.display = 'none';
-    document.getElementById('pause-scan').style.display = 'inline-block';
-    document.getElementById('resume-scan').style.display = 'none';
-
-    const companyNames = new Set();
-    const taskQueue = [];
-    let producerDone = false;
-
-    const consumer = async () => {
-      while (!producerDone || taskQueue.length > 0) {
-        while (this.isPaused) await sleep(1000);
-
-        if (taskQueue.length > 0) {
-          const name = taskQueue.shift(); // Process one by one
-
-          const processRating = (rating) => {
-            DrawerManager.updateItem(name, rating);
-            if (rating !== 'N/A') {
-              document.querySelectorAll(`button[data-company-name="${name}"]`).forEach(button => {
-                const container = button.parentElement.parentElement;
-                UIManager.injectRating(container, rating, name);
-              });
-            }
-            this.completedCompanies++;
-            DrawerManager.updateStatus({ type: 'progress', completed: this.completedCompanies, total: this.totalCompanies });
-          };
-
-          if (this.ratingsCache[name]) {
-            processRating(this.ratingsCache[name]);
-          } else {
-            const result = await BlindAPI.fetchReview(extractCompanyName(name));
-            const { rating } = result;
-            this.ratingsCache[name] = rating;
-            await StorageManager.save(this.ratingsCache);
-            processRating(rating);
-            await sleep(100); // API fetch delay
-          }
-        } else {
-          await sleep(500);
-        }
-      }
-      this.complete();
-    };
-
-    const producer = async () => {
-      let lastHeight = 0, consecutiveNoChangeCount = 0;
-      const MAX_NO_CHANGE_ATTEMPTS = 3;
-      while (true) {
-        while (this.isPaused) await sleep(1000);
-        document.querySelectorAll('button[data-company-name]').forEach(button => {
-          const name = button.getAttribute('data-company-name');
-          if (name && !companyNames.has(name)) {
-            companyNames.add(name);
-            this.totalCompanies++; // Increment total count regardless of cache hit
-
-            DrawerManager.addItem(name); // Add to drawer UI
-
-            if (this.ratingsCache[name]) { // Check cache
-              const rating = this.ratingsCache[name];
-              // Update UI immediately with cached rating
-              DrawerManager.updateItem(name, rating);
-              if (rating !== 'N/A') {
-                document.querySelectorAll(`button[data-company-name="${name}"]`).forEach(btn => {
-                  const container = btn.parentElement.parentElement;
-                  UIManager.injectRating(container, rating, name);
-                });
-              }
-              this.completedCompanies++; // Mark as completed
-            } else {
-              taskQueue.push(name); // Not in cache, add to fetch queue
-            }
-            DrawerManager.updateStatus({ type: 'progress', completed: this.completedCompanies, total: this.totalCompanies });
-          }
-        });
-        window.scrollTo(0, document.body.scrollHeight);
-        await sleep(500);
-
-        const newHeight = document.body.scrollHeight;
-        if (newHeight === lastHeight) {
-          consecutiveNoChangeCount++;
-          if (consecutiveNoChangeCount >= MAX_NO_CHANGE_ATTEMPTS) break;
-        } else {
-          consecutiveNoChangeCount = 0;
-          lastHeight = newHeight;
-        }
-      }
-      producerDone = true;
-    };
-
-    consumer();
-    producer();
-  },
-
-  complete: function() {
-    DrawerManager.updateStatus({ text: '수집 완료', color: 'green' });
-    this.isScanning = false;
-    document.getElementById('pause-scan').style.display = 'none';
-    document.getElementById('resume-scan').style.display = 'none';
-
-    this.reinjectRatings();
-    addBlindReviewSortButton();
-  },
-
-  reinjectRatings: function() {
-    const jobListUl = document.querySelector('ul[data-cy="job-list"]');
-
-    for (const name in this.ratingsCache) {
-      const rating = this.ratingsCache[name];
-      if (rating !== 'N/A') {
-        document.querySelectorAll(`button[data-company-name="${name}"]`).forEach(btn => {
-          const container = btn.parentElement.parentElement;
-          // Check if the rating is already injected to avoid duplicates
-          if (!container.querySelector('.blind-score')) {
+    try {
+      const processRating = (rating) => {
+        DrawerManager.updateItem(name, rating);
+        if (rating !== 'N/A') {
+          document.querySelectorAll(`button[data-company-name="${name}"]`).forEach(button => {
+            const container = button.parentElement.parentElement;
             UIManager.injectRating(container, rating, name);
-          }
-        });
+          });
+        }
+        this.completedCompanies++;
+        DrawerManager.updateStatus({ type: 'progress', completed: this.completedCompanies, total: this.totalCompanies });
+      };
+
+      if (this.ratingsCache[name]) {
+        processRating(this.ratingsCache[name]);
+      } else {
+        // Randomized Jitter: 200ms - 600ms
+        const delay = Math.floor(Math.random() * (600 - 200 + 1) + 200);
+        await sleep(delay);
+
+        const result = await BlindAPI.fetchReview(extractCompanyName(name));
+        const { rating } = result;
+
+        // Simple backoff check: if we get a specific error signal (requires API update) or just rely on jitter.
+        // For now, we proceed.
+
+        this.ratingsCache[name] = rating;
+        await StorageManager.save(this.ratingsCache);
+        processRating(rating);
       }
-    }
-
-    // After re-injecting and sorting, correct the selected state of our custom button
-    const sortFilterUl = document.querySelector('ul.SortFilter_SortFilter__list__QuSd6');
-    const blindReviewSortButtonLi = document.getElementById('sort-by-blind-review')?.closest('li');
-
-    if (sortFilterUl && blindReviewSortButtonLi) {
-      // Check if any native sort button is currently selected
-      // Exclude our custom button from this check
-      const nativeSelectedButton = sortFilterUl.querySelector('li.SortFilter_SortFilter__list__item__selected__k5thb:not(#sort-by-blind-review)');
-
-      if (nativeSelectedButton) {
-        // If a native button is selected, ensure our custom button is NOT selected
-        blindReviewSortButtonLi.classList.remove('SortFilter_SortFilter__list__item__selected__k5thb');
-        blindReviewSortButtonLi.querySelector('span')?.classList.remove('SortFilter_SortFilter__list__item__selected__text__u7klW', 'wds-12dtfjt');
-        blindReviewSortButtonLi.querySelector('span')?.classList.add('wds-83zqyc');
-      }
+    } catch (err) {
+      console.error(`Error processing ${name}:`, err);
+      // Backoff on error
+      await sleep(5000);
+    } finally {
+      this.activeRequests--;
+      this.processQueue();
     }
   },
 
-  init: async function() {
+  scanVisibleCompanies: function () {
+    const buttons = document.querySelectorAll('button[data-company-name]');
+    let newFound = false;
+
+    buttons.forEach(button => {
+      const name = button.getAttribute('data-company-name');
+      if (!name) return;
+
+      // 1. Injection: Always try to inject if cached (handles multiple cards/re-renders)
+      if (this.ratingsCache[name]) {
+        const container = button.parentElement.parentElement;
+        if (this.ratingsCache[name] !== 'N/A') {
+          UIManager.injectRating(container, this.ratingsCache[name], name);
+        }
+        // Also update drawer for cached items if it's not already updated by processNextItem
+        // This ensures the drawer reflects the state immediately on scan if cached.
+        DrawerManager.updateItem(name, this.ratingsCache[name]);
+      }
+
+      // 2. Discovery: If new to this session, add to drawer and queue
+      if (!this.processedCompanies.has(name)) {
+        this.processedCompanies.add(name);
+        this.totalCompanies++;
+        newFound = true;
+
+        DrawerManager.addItem(name);
+
+        if (this.ratingsCache[name]) {
+          // Already handled injection above, just count it as completed
+          this.completedCompanies++;
+        } else {
+          this.queue.push(name);
+          // Inject LOADING state immediately
+          const container = button.parentElement.parentElement;
+          UIManager.injectRating(container, 'LOADING', name);
+        }
+      }
+    });
+
+    if (newFound) {
+      DrawerManager.updateStatus({ type: 'progress', completed: this.completedCompanies, total: this.totalCompanies });
+      this.processQueue();
+    }
+  },
+
+  handleScroll: function () {
+    if (this.scrollTimer) clearTimeout(this.scrollTimer);
+    this.scrollTimer = setTimeout(() => {
+      this.scanVisibleCompanies();
+    }, 200); // Debounce scroll events
+  },
+
+  init: async function () {
     this.ratingsCache = await StorageManager.load();
 
-    const isListingPage = window.location.pathname.startsWith('/wdlist');
-    if (isListingPage) {
-      // Set up MutationObserver for the job list
-      const targetNode = document.querySelector('ul[data-cy="job-list"]');
-      if (targetNode) {
-        const config = { childList: true, subtree: false }; // Observe direct children
-
-        const callback = (mutationsList, observer) => {
-          // Debounce the re-injection logic
-          clearTimeout(this.reinjectTimer);
-          this.reinjectTimer = setTimeout(() => {
-            console.log('Job list changed, re-injecting ratings...');
-            this.reinjectRatings();
-          }, 500); // Debounce by 500ms
+    // Initialize Drawer immediately
+    if (!this.isDrawerInitialized) {
+      DrawerManager.create();
+      DrawerManager.clear();
+      // Remove old event listeners if any (not strictly necessary as we are replacing logic)
+      // Setup close button
+      const closeBtn = document.getElementById('close-drawer');
+      if (closeBtn) {
+        closeBtn.onclick = () => {
+          DrawerManager.drawer.style.display = 'none';
+          DrawerManager.updateButtonAndStatusDisplay();
         };
-
-        this.jobListObserver = new MutationObserver(callback);
-        this.jobListObserver.observe(targetNode, config);
       }
+      this.isDrawerInitialized = true;
+    }
+
+    // Initial scan
+    this.scanVisibleCompanies();
+
+    // Scroll listener
+    window.addEventListener('scroll', () => this.handleScroll());
+
+    // MutationObserver for dynamic content loading (infinite scroll)
+    const targetNode = document.querySelector('ul[data-cy="job-list"]');
+    if (targetNode) {
+      const observer = new MutationObserver((mutations) => {
+        // With subtree: false, we only care about direct children (li elements) being added.
+        // We don't need complex filtering because our injections happen deep inside the children,
+        // so they won't trigger this observer anymore.
+        let shouldScan = false;
+        for (const mutation of mutations) {
+          if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+            shouldScan = true;
+            break;
+          }
+        }
+
+        if (shouldScan) {
+          console.log('[WantedRating] New job cards detected, scanning...');
+          this.scanVisibleCompanies();
+        }
+      });
+      // CRITICAL FIX: subtree: false
+      // We only want to know when new LI elements are added to the UL.
+      // We do NOT want to know when we modify the content inside those LIs (injecting ratings).
+      observer.observe(targetNode, { childList: true, subtree: false });
     }
 
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       if (request.type === 'SHOW_DRAWER') {
-        if (!this.isDrawerInitialized) {
-          DrawerManager.create();
-          DrawerManager.clear();
-          // 버튼 이벤트 핸들러 설정
-          document.getElementById('start-scan-in-drawer').onclick = () => this.startFullScan();
-          document.getElementById('pause-scan').onclick = () => this.pause();
-          document.getElementById('resume-scan').onclick = () => this.resume();
-          document.getElementById('close-drawer').onclick = () => {
-            DrawerManager.drawer.style.display = 'none';
-            DrawerManager.updateButtonAndStatusDisplay();
-          };
-          DrawerManager.updateStatus({ text: '대기 중', color: 'gray'});
-          // 초기 버튼 상태 설정
-          document.getElementById('start-scan-in-drawer').style.display = 'inline-block';
-          document.getElementById('pause-scan').style.display = 'none';
-          document.getElementById('resume-scan').style.display = 'none';
-          this.isDrawerInitialized = true;
-        } else {
-          // If already initialized, just ensure it's visible
-          if (DrawerManager.drawer) {
-            DrawerManager.drawer.style.display = 'flex';
-          }
+        if (DrawerManager.drawer) {
+          DrawerManager.drawer.style.display = 'flex';
+          DrawerManager.updateButtonAndStatusDisplay();
         }
-
       }
     });
   }
@@ -294,7 +254,7 @@ const JobScanner = {
 
   if (isListingPage) {
     JobScanner.init();
-    
+
   } else if (isDetailPage) {
     await getOneCompany(); // Call the standalone function
   } else {

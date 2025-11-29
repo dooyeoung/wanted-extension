@@ -4,10 +4,10 @@ const DrawerManager = {
   sortState: { key: null, direction: 'desc' },
   latestStatus: { type: 'progress', completed: 0, total: 0 },
 
-  create: function() {
+  create: function () {
     if (this.drawer) {
       this.drawer.style.display = 'flex';
-      if(this.openButton) this.openButton.style.display = 'block';
+      if (this.openButton) this.openButton.style.display = 'block';
       return;
     }
 
@@ -25,9 +25,6 @@ const DrawerManager = {
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; flex-shrink: 0;">
           <span id="blind-rating-status"></span>
           <div>
-            <button id="start-scan-in-drawer" style="padding: 5px 10px; font-size: 0.9em;">수집 시작</button>
-            <button id="pause-scan" title="수집 정지" style="padding: 5px 10px; font-size: 0.9em; display: none;">수집 정지</button>
-            <button id="resume-scan" title="다시 시작" style="padding: 5px 10px; font-size: 0.9em; display: none;">다시 시작</button>
             <button id="close-drawer" title="닫기">X</button>
           </div>
         </div>
@@ -42,10 +39,10 @@ const DrawerManager = {
     // Attach event listeners
     this.drawer.querySelector('#sort-by-name').onclick = () => this.sortItems('name');
     this.drawer.querySelector('#sort-by-rating').onclick = () => this.sortItems('rating');
-    this.drawer.querySelector('#start-scan-in-drawer').onclick = () => console.log('Start Scan Clicked'); // Placeholder
-    this.drawer.querySelector('#pause-scan').onclick = () => console.log('Pause Scan Clicked'); // Placeholder
-    this.drawer.querySelector('#resume-scan').onclick = () => console.log('Resume Scan Clicked'); // Placeholder
-    this.drawer.querySelector('#close-drawer').onclick = () => this.hide(); // Assuming a hide method exists or will be added
+    this.drawer.querySelector('#close-drawer').onclick = () => {
+      this.drawer.style.display = 'none';
+      this.updateButtonAndStatusDisplay();
+    };
 
     // Apply margin-left to buttons
     this.drawer.querySelectorAll('button').forEach(btn => btn.style.marginLeft = '5px');
@@ -53,7 +50,7 @@ const DrawerManager = {
     this.createOpenButton();
   },
 
-  createOpenButton: function() {
+  createOpenButton: function () {
     if (this.openButton) return;
     this.openButton = document.createElement('button');
     this.openButton.textContent = '결과 보기';
@@ -65,7 +62,7 @@ const DrawerManager = {
     document.body.appendChild(this.openButton);
   },
 
-  formatStatusText: function(status) {
+  formatStatusText: function (status) {
     if (status.type === 'progress') {
       return `수집 현황: ${status.completed} / ${status.total}`;
     } else {
@@ -73,7 +70,7 @@ const DrawerManager = {
     }
   },
 
-  updateButtonAndStatusDisplay: function() {
+  updateButtonAndStatusDisplay: function () {
     if (!this.drawer || !this.openButton) return;
     const statusText = this.formatStatusText(this.latestStatus);
     const statusColor = this.latestStatus.color || 'blue';
@@ -89,19 +86,18 @@ const DrawerManager = {
     }
   },
 
-  updateStatus: function(status) {
+  updateStatus: function (status) {
     this.latestStatus = status;
     this.updateButtonAndStatusDisplay();
   },
 
-  addItem: function(companyName) {
+  addItem: function (companyName) {
     const itemHtml = `
       <div class="drawer-item-row" style="display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee;">
         <div class="drawer-item-name" style="flex: 4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${companyName}</div>
         <div class="drawer-item-rating" style="flex: 1; text-align: center;">대기 중...</div>
         <div class="drawer-item-links" style="flex: 3; text-align: center;">
           <button class="blind-link-button" data-company="${companyName}" style="color: #0077cc; text-decoration: underline; cursor: pointer; border: none; background: none; padding: 0;">리뷰 보기</button>
-          <button class="jobkorea-link-button" data-company="${companyName}" style="color: #0077cc; text-decoration: underline; cursor: pointer; border: none; background: none; padding: 0; margin-left: 8px;">잡코리아 정보 보기</button>
         </div>
       </div>
     `;
@@ -120,7 +116,7 @@ const DrawerManager = {
     this.items.push({ name: companyName, rating: null, element: newRow });
   },
 
-  updateItem: function(companyName, rating) {
+  updateItem: function (companyName, rating) {
     const item = this.items.find(it => it.name === companyName);
     if (!item) return;
     item.rating = rating;
@@ -134,7 +130,7 @@ const DrawerManager = {
     }
   },
 
-  updateSortIndicator: function() {
+  updateSortIndicator: function () {
     if (!this.drawer) return; // 오류 방지 가드 추가
     const nameHeader = this.drawer.querySelector('#sort-by-name');
     const ratingHeader = this.drawer.querySelector('#sort-by-rating');
@@ -146,7 +142,7 @@ const DrawerManager = {
     targetHeader.textContent += arrow;
   },
 
-  sortItems: function(key) {
+  sortItems: function (key) {
     if (this.sortState.key === key) {
       this.sortState.direction = this.sortState.direction === 'asc' ? 'desc' : 'asc';
     } else {
@@ -168,7 +164,7 @@ const DrawerManager = {
     this.updateSortIndicator();
   },
 
-  clear: function() {
+  clear: function () {
     if (this.list) this.list.innerHTML = '';
     this.items = [];
     this.sortState = { key: null, direction: 'desc' };
