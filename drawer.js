@@ -18,7 +18,6 @@ const DrawerManager = {
           <div style="display: flex; padding: 5px 0; border-bottom: 1px solid #ccc; flex-shrink: 0; user-select: none; font-size: 0.9em;">
             <div id="sort-by-name" style="flex: 3; cursor: pointer;">회사명</div>
             <div id="sort-by-rating" style="flex: 1; text-align: center; cursor: pointer;">평점</div>
-            <div style="flex: 0.5; text-align: center;">리뷰</div>
             <div style="flex: 1; text-align: center;">매출</div>
             <div style="flex: 1; text-align: center;">영업</div>
             <div style="flex: 1; text-align: center;">순익</div>
@@ -117,9 +116,11 @@ const DrawerManager = {
     const itemHtml = `
       <div class="drawer-item-row" style="display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 0.9em;">
         <div class="drawer-item-name" style="flex: 3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; text-decoration: underline;" title="원티드 상세 페이지 이동">${companyName}</div>
-        <div class="drawer-item-rating" style="flex: 1; text-align: center;">대기 중...</div>
-        <div class="drawer-item-review" style="flex: 0.5; text-align: center; cursor: pointer;">
-            <img src="https://static.teamblind.com/img/www/favicon.ico" width="16" height="16" style="vertical-align: middle;" title="블라인드 리뷰 보기">
+        <div style="display: flex; flex: 1; align-items: center;">
+          <div class="drawer-item-review" style="text-align: center; cursor: pointer;">
+          <img src="https://static.teamblind.com/img/www/favicon.ico" width="16" height="16" style="vertical-align: middle;" title="블라인드 리뷰 보기">
+          </div>
+          <div class="drawer-item-rating" style="text-align: center;">대기 중...</div>
         </div>
         <div class="drawer-item-sales" style="flex: 1; text-align: center;">-</div>
         <div class="drawer-item-op" style="flex: 1; text-align: center;">-</div>

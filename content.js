@@ -99,9 +99,15 @@ const JobScanner = {
       const processRating = (rating) => {
         DrawerManager.updateItem(name, rating);
         if (rating !== 'N/A') {
+          // Get financial data from cache if available
+          let financial = undefined;
+          if (this.ratingsCache[name] && typeof this.ratingsCache[name] === 'object') {
+            financial = this.ratingsCache[name].financial;
+          }
+
           document.querySelectorAll(`button[data-company-name="${name}"]`).forEach(button => {
             const container = button.parentElement.parentElement;
-            UIManager.injectRating(container, rating, name);
+            UIManager.injectRating(container, rating, name, financial);
           });
         }
         this.completedCompanies++;
@@ -250,7 +256,7 @@ const JobScanner = {
 
         const container = button.parentElement.parentElement;
         if (rating !== 'N/A') {
-          UIManager.injectRating(container, rating, name);
+          UIManager.injectRating(container, rating, name, financial);
         }
         // Also update drawer for cached items if it's not already updated by processNextItem
         // This ensures the drawer reflects the state immediately on scan if cached.
