@@ -15,7 +15,6 @@ const DrawerManager = {
       <div id="blind-rating-drawer" style="position: fixed; top: 0; right: 0; width: 650px; height: 100%; background-color: white; border-left: 1px solid #e0e0e0; box-shadow: -2px 0 5px rgba(0,0,0,0.1); z-index: 9999; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box;">
         <div style="flex-shrink: 0; height: 60px;">
           <div style="display: flex; justify-content: space-between;">
-            <span style="flex: 1;">블라인드 평점 수집</span>
             <span style="flex: 1;" id="blind-rating-status"></span>
             <div >
               <button id="close-drawer" title="닫기">X</button>
@@ -136,7 +135,7 @@ const DrawerManager = {
         <div class="drawer-item-name" style="flex: 3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; text-decoration: underline;" title="원티드 상세 페이지 이동">${companyName}</div>
         <div style="display: flex; flex: 1; align-items: center;">
           <div class="drawer-item-review" style="text-align: center; cursor: pointer;">
-          <img src="https://static.teamblind.com/img/www/favicon.ico" width="16" height="16" style="vertical-align: middle;" title="블라인드 리뷰 보기">
+          <img src="https://static.teamblind.com/img/www/favicon.ico" width="14" height="14" style="vertical-align: middle; margin-right: 4px;" title="블라인드 리뷰 보기">
           </div>
           <div class="drawer-item-rating" style="text-align: center;">대기 중...</div>
         </div>
@@ -181,7 +180,7 @@ const DrawerManager = {
     if (rating !== undefined) {
       if (rating !== '-') {
         const color = getRatingColor(rating);
-        ratingCell.innerHTML = `<span style="color: ${color}; font-weight: bold;">★ ${rating}</span>`;
+        ratingCell.innerHTML = `<b style="color: ${color}; font-size:14px;">${rating}</b>`;
       } else {
         ratingCell.innerHTML = '-';
       }

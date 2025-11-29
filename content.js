@@ -120,7 +120,6 @@ const JobScanner = {
           { type: 'FETCH_WANTED_COMPANY_INFO', companyId: id },
           (response) => {
             if (response && response.success) {
-              console.log(`[WantedRating] Company: ${name}, Hash: ${response.regNoHash}`);
 
               // Update cache with hash
               if (!this.ratingsCache[name]) this.ratingsCache[name] = { rating: '-' };
@@ -139,8 +138,6 @@ const JobScanner = {
                     if (report.length > 0) {
                       const lastReport = report[report.length - 1];
                       const { year, operatingIncome, netIncome, salesAmount } = lastReport;
-
-                      console.log(`[WantedRating] Financial for ${name}:`, { year, operatingIncome, netIncome, salesAmount });
 
                       // Update cache with financial data
                       if (this.ratingsCache[name]) {
@@ -318,7 +315,6 @@ const JobScanner = {
         }
 
         if (shouldScan) {
-          console.log('[WantedRating] New job cards detected, scanning...');
           this.scanVisibleCompanies();
         }
       });

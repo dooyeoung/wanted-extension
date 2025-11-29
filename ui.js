@@ -51,9 +51,9 @@ const UIManager = {
 
       // Line 1: Icon + Rating
       let line1Html = `
-        <div style="display: flex; align-items: center; margin-bottom: 4px;">
+        <div style="display: flex; align-items: center; margin-top: 8px; margin-bottom: 4px;">
           <img src="https://static.teamblind.com/img/www/favicon.ico" width="14" height="14" style="margin-right: 4px; vertical-align: middle; cursor: pointer;" class="blind-icon-link" title="블라인드 리뷰 보기">
-          <span style="color: ${color};">★ ${rating}</span>
+          <b style="color: ${color}; font-size:14px">${rating}</b>
         </div>
       `;
 
