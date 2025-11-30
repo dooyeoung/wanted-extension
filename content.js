@@ -100,6 +100,14 @@ const JobScanner = {
               UIManager.injectRating(container, rating, name, financial);
             }
           });
+        } else {
+          // Also inject if rating is '-' to clear LOADING state
+          document.querySelectorAll(`[data-cy="job-card"] button[data-company-name="${name}"]`).forEach(button => {
+            const container = button.closest('[data-cy="job-card"]');
+            if (container) {
+              UIManager.injectRating(container, rating, name, undefined);
+            }
+          });
         }
         this.completedCompanies++;
         DrawerManager.updateStatus({ type: 'progress', completed: this.completedCompanies, total: this.totalCompanies });
@@ -163,8 +171,14 @@ const JobScanner = {
 
       // Normalize to string if object
       if (typeof cachedRating === 'object') {
-        cachedFinancial = cachedRating.financial;
-        cachedRating = cachedRating.rating;
+        // Check Expiration
+        if (cachedRating.expired_at && Date.now() > cachedRating.expired_at) {
+          console.log(`[WantedRating] Cache expired for ${name}, re-fetching.`);
+          cachedRating = null; // Force re-fetch
+        } else {
+          cachedFinancial = cachedRating.financial;
+          cachedRating = cachedRating.rating;
+        }
       }
 
       if (cachedRating && cachedRating !== '-') {
@@ -183,6 +197,8 @@ const JobScanner = {
         if (typeof this.ratingsCache[name] !== 'object') this.ratingsCache[name] = { rating: this.ratingsCache[name] };
 
         this.ratingsCache[name].rating = rating;
+        // Set Expiration (7 days)
+        this.ratingsCache[name].expired_at = Date.now() + (7 * 24 * 60 * 60 * 1000);
 
         await StorageManager.save(this.ratingsCache);
         processRating(rating);
@@ -195,6 +211,14 @@ const JobScanner = {
       }
     } catch (err) {
       console.error(`Error processing ${name}:`, err);
+
+      // Mark as completed (failed) to keep counters in sync
+      this.completedCompanies++;
+      DrawerManager.updateStatus({ type: 'progress', completed: this.completedCompanies, total: this.totalCompanies });
+
+      // Optionally mark in drawer
+      DrawerManager.updateItem(name, '-'); // Or 'Error'
+
       // Backoff on error
       await sleep(5000);
     } finally {
@@ -221,8 +245,25 @@ const JobScanner = {
         DrawerManager.addItem(name, id);
 
         if (this.ratingsCache[name]) {
-          // Even if cached, we queue it to fetch regNoHash, but skip rating fetch
-          this.queue.push({ name, id, skipRating: true });
+          // Check if expired
+          const cached = this.ratingsCache[name];
+          let isExpired = false;
+          if (typeof cached === 'object' && cached.expired_at && Date.now() > cached.expired_at) {
+            isExpired = true;
+          }
+
+          if (!isExpired) {
+            // Valid cache: skip rating fetch
+            this.queue.push({ name, id, skipRating: true });
+          } else {
+            // Expired: fetch everything
+            this.queue.push({ name, id, skipRating: false });
+            // Inject LOADING state
+            const container = button.closest('[data-cy="job-card"]');
+            if (container) {
+              UIManager.injectRating(container, 'LOADING', name);
+            }
+          }
         } else {
           this.queue.push({ name, id, skipRating: false }); // Push object with ID
           // Inject LOADING state immediately
@@ -240,17 +281,28 @@ const JobScanner = {
 
         // Handle object structure
         if (typeof rating === 'object') {
-          financial = rating.financial;
-          rating = rating.rating;
+          // Check Expiration
+          if (rating.expired_at && Date.now() > rating.expired_at) {
+            // Expired: Do not inject, let the queue handle re-fetch (since we added it to queue in step 1 if new, 
+            // BUT if it was already processed in this session, we might need to re-queue?
+            // Actually, scanVisibleCompanies adds to queue if !processedCompanies.has(name).
+            // If it's in cache but expired, we should probably treat it as "not processed" or force queue add?
+            // Wait, if it's in cache, we usually skip rating fetch in queue.
+            // We need to fix the queue logic above too.
+          } else {
+            financial = rating.financial;
+            rating = rating.rating;
+          }
         }
 
         const container = button.closest('[data-cy="job-card"]');
-        if (container && rating !== '-') {
+        // Only inject if valid rating and NOT expired (if expired, rating will be object or we handled it)
+        // If expired, rating variable is still the object.
+
+        if (typeof rating !== 'object') { // Simple check: if it became a value (including '-')
           UIManager.injectRating(container, rating, name, financial);
+          DrawerManager.updateItem(name, rating, financial);
         }
-        // Also update drawer for cached items if it's not already updated by processNextItem
-        // This ensures the drawer reflects the state immediately on scan if cached.
-        DrawerManager.updateItem(name, rating, financial);
       }
     });
 

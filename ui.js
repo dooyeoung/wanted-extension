@@ -45,8 +45,18 @@ const UIManager = {
             <span style="color: #999;">데이터 수집중...</span>
         `;
     } else {
-      const parsedRating = parseFloat(rating);
-      const fontWeight = parsedRating >= 4 ? '700' : '400';
+      let displayRating = rating;
+      let fontWeight = '400';
+
+      if (rating !== '-') {
+        const parsedRating = parseFloat(rating);
+        if (!isNaN(parsedRating)) {
+          displayRating = parsedRating;
+          fontWeight = parsedRating >= 4 ? '700' : '400';
+        }
+      } else {
+        displayRating = '-';
+      }
 
       // Line 1: Icon + Rating
       let line1Html = `
@@ -69,10 +79,9 @@ const UIManager = {
           <span style="color: #333; font-size: 14px;">블라인드 평점</span>
         </div>
         <div style="display: flex; align-items: center;">
-          <span style="font-size: 16px; font-weight: ${fontWeight}; margin-right: 5px;">${parsedRating}</span>
+          <span style="font-size: 16px; font-weight: ${fontWeight}; margin-right: 5px;">${displayRating}</span>
         </div>
       </div>
-
       `;
 
       // Line 2: Financial Data (if available)
