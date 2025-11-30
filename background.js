@@ -1,5 +1,20 @@
 // background.js
+import Analytics from './ga.js';
+
+chrome.runtime.onInstalled.addListener((details) => {
+  if (details.reason === 'install') {
+    Analytics.fireEvent('app_install');
+  } else if (details.reason === 'update') {
+    Analytics.fireEvent('app_update', { version: chrome.runtime.getManifest().version });
+  }
+});
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'GA_EVENT') {
+    Analytics.fireEvent(message.eventName, message.params);
+    return;
+  }
+
   if (message.type === 'FETCH_BLIND') {
     const company = message.company;
     const url = `https://www.teamblind.com/kr/company/${encodeURIComponent(company)}/reviews`;

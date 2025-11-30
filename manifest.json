@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Wanted + Blind Score",
+  "name": "Job Radar",
   "version": "1.0",
-  "description": "원티드 회사 목록에 블라인드 점수를 함께 표시합니다.",
+  "description": "회사 평가 정보와 재무 정보를 함께 표시합니다.",
   "permissions": [
     "activeTab",
     "scripting",
@@ -37,6 +37,7 @@
     }
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   }
 }

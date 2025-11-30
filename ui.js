@@ -60,7 +60,7 @@ const UIManager = {
       if (financial) {
         const { salesAmount, operatingIncome, netIncome } = financial;
         let bgColor = '#f5f5f5'; // Default Gray
-        if (netIncome > 0) {
+        if (netIncome > 0 && operatingIncome > 0) {
           bgColor = 'rgb(158 237 184)'; // Green
         } else if (operatingIncome < 0 && netIncome < 0) {
           bgColor = '#ffccc7'; // Red (light red for background)
@@ -93,6 +93,11 @@ const UIManager = {
       if (iconLink) {
         iconLink.onclick = (e) => {
           e.stopPropagation(); e.preventDefault();
+          chrome.runtime.sendMessage({
+            type: 'GA_EVENT',
+            eventName: 'click_blind_icon',
+            params: { company: companyName }
+          });
           window.open(`https://www.teamblind.com/kr/company/${encodeURIComponent(extractCompanyName(companyName))}/reviews`, '_blank');
         };
       }

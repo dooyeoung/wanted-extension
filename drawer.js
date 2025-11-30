@@ -19,6 +19,12 @@ const DrawerManager = {
     this.isFullHidden = false;
     if (this.drawer) this.drawer.style.display = 'flex';
     if (this.openButton) this.openButton.style.display = 'none';
+
+    chrome.runtime.sendMessage({
+      type: 'GA_EVENT',
+      eventName: 'open_drawer',
+      params: { source: 'reopen' }
+    });
   },
   create: function () {
     if (this.drawer) {
@@ -87,6 +93,12 @@ const DrawerManager = {
 
     // Initialize chart (but don't show it)
     this.initializeChart();
+
+    chrome.runtime.sendMessage({
+      type: 'GA_EVENT',
+      eventName: 'open_drawer',
+      params: { source: 'create' }
+    });
   },
 
   createOpenButton: function () {
@@ -278,6 +290,12 @@ const DrawerManager = {
     this.chartVisible = !this.chartVisible;
     const toggleBtn = this.drawer.querySelector('#toggle-chart-btn');
 
+    chrome.runtime.sendMessage({
+      type: 'GA_EVENT',
+      eventName: 'toggle_chart',
+      params: { visible: this.chartVisible }
+    });
+
     if (this.chartVisible) {
       // Show chart
       this.chartContainer.style.display = 'block';
@@ -332,6 +350,13 @@ const DrawerManager = {
       this.sortState.key = key;
       this.sortState.direction = key === 'rating' ? 'desc' : 'asc';
     }
+
+    chrome.runtime.sendMessage({
+      type: 'GA_EVENT',
+      eventName: 'sort_list',
+      params: { key: this.sortState.key, direction: this.sortState.direction }
+    });
+
     this.items.sort((a, b) => {
       const dir = this.sortState.direction === 'asc' ? 1 : -1;
       if (this.sortState.key === 'rating') {

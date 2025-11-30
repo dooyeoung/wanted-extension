@@ -52,10 +52,17 @@ const DetailManager = {
                 return amount.toLocaleString();
             };
 
+            let bgColor = '#f5f5f5'; // Default Gray
+            if (netIncome > 0 && operatingIncome > 0) {
+                bgColor = 'rgb(158 237 184)'; // Green
+            } else if (operatingIncome < 0 && netIncome < 0) {
+                bgColor = '#ffccc7'; // Red (light red for background)
+            }
+
             const finDiv = document.createElement('div');
             finDiv.className = 'wanted-rating-financial-info';
             finDiv.style.padding = '12px';
-            finDiv.style.backgroundColor = '#f8f9fa';
+            finDiv.style.backgroundColor = bgColor;
             finDiv.style.borderRadius = '8px';
             finDiv.style.border = '1px solid #e1e2e3';
             finDiv.style.fontSize = '14px';
@@ -69,11 +76,11 @@ const DetailManager = {
         </div>
         <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
           <span style="">영업이익</span>
-          <span style="font-weight: 600; color: ${operatingIncome > 0 ? '#00a8ff' : (operatingIncome < 0 && netIncome < 0 ? '#ff4d4f' : '#888')};">${formatMoney(operatingIncome)}</span>
+          <span style="font-weight: 600;">${formatMoney(operatingIncome)}</span>
         </div>
         <div style="display: flex; justify-content: space-between;">
           <span style="">당기순이익</span>
-          <span style="font-weight: 600; color: ${netIncome > 0 ? '#00a8ff' : (operatingIncome < 0 && netIncome < 0 ? '#ff4d4f' : '#888')};">${formatMoney(netIncome)}</span>
+          <span style="font-weight: 600;">${formatMoney(netIncome)}</span>
         </div>
       `;
 

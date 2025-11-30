@@ -340,6 +340,16 @@ const handlePageTransition = async () => {
 
   console.log(`[WantedRating] Page Transition: Listing=${isListingPage}, Detail=${isDetailPage}`);
 
+  chrome.runtime.sendMessage({
+    type: 'GA_EVENT',
+    eventName: 'page_view',
+    params: {
+      page_path: window.location.pathname + window.location.search,
+      page_location: window.location.href,
+      page_type: isListingPage ? 'listing' : (isDetailPage ? 'detail' : 'other')
+    }
+  });
+
   if (isListingPage) {
     // Ensure drawer is initialized and visible
     if (!JobScanner.isDrawerInitialized) {
