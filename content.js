@@ -398,6 +398,7 @@ const handlePageTransition = async () => {
     params: {
       page_path: window.location.pathname + window.location.search,
       page_location: window.location.href,
+      page_title: document.title,
       page_type: isListingPage ? 'listing' : (isDetailPage ? 'detail' : 'other')
     }
   });
