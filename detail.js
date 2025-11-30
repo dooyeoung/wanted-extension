@@ -2,7 +2,6 @@ const DetailManager = {
     injectFinancialInfo: function (report, rating, companyName) {
         const targetButton = document.querySelector('aside button.wds-slid3e');
         if (!targetButton) {
-            console.log("[WantedRating] Target button for injection not found.");
             return;
         }
 
@@ -118,7 +117,6 @@ const DetailManager = {
                     try {
                         const result = await BlindAPI.fetchReview(extractCompanyName(companyName));
                         blindRating = result.rating;
-                        console.log(`[WantedRating] Blind Review for ${companyName}:`, result);
                     } catch (e) {
                         console.error("[WantedRating] Failed to fetch Blind review:", e);
                     }
@@ -134,14 +132,12 @@ const DetailManager = {
                                         { type: 'FETCH_FINANCIAL_REPORT', regNoHash: response.regNoHash },
                                         (finResponse) => {
                                             if (finResponse && finResponse.success) {
-                                                console.log(`[WantedRating] Financial Data for ${companyName}:`, finResponse.data);
 
                                                 if (finResponse.data.financialReport && finResponse.data.financialReport.length > 0) {
                                                     const lastReport = finResponse.data.financialReport[finResponse.data.financialReport.length - 1];
                                                     this.injectFinancialInfo(lastReport, blindRating, companyName);
                                                 }
                                             } else {
-                                                console.log(`[WantedRating] No Financial Data or Error for ${companyName}:`, finResponse?.error);
                                             }
                                         }
                                     );
@@ -153,8 +149,6 @@ const DetailManager = {
                         }
                     );
                     return; // Success, exit function
-                } else {
-                    console.log("[WantedRating] Could not extract company ID from link:", href);
                 }
             }
 
@@ -162,7 +156,5 @@ const DetailManager = {
             await sleep(500);
             retries++;
         }
-
-        console.log("[WantedRating] Company link not found on page after retries.");
     }
 };

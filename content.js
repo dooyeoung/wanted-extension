@@ -173,7 +173,6 @@ const JobScanner = {
       if (typeof cachedRating === 'object') {
         // Check Expiration
         if (cachedRating.expired_at && Date.now() > cachedRating.expired_at) {
-          console.log(`[WantedRating] Cache expired for ${name}, re-fetching.`);
           cachedRating = null; // Force re-fetch
         } else {
           cachedFinancial = cachedRating.financial;
@@ -389,8 +388,6 @@ let lastUrl = location.href;
 const handlePageTransition = async () => {
   const isListingPage = window.location.pathname.startsWith('/wdlist');
   const isDetailPage = window.location.pathname.startsWith('/wd/') && !isNaN(parseInt(window.location.pathname.split('/')[2]));
-
-  console.log(`[WantedRating] Page Transition: Listing=${isListingPage}, Detail=${isDetailPage}`);
 
   chrome.runtime.sendMessage({
     type: 'GA_EVENT',
