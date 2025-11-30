@@ -15,6 +15,9 @@
     "https://www.teamblind.com/*",
     "https://insight.wanted.co.kr/*"
   ],
+  "icons": {
+    "128": "extension_icon128.png"
+  },
   "content_scripts": [
     {
       "matches": [

@@ -45,14 +45,34 @@ const UIManager = {
             <span style="color: #999;">데이터 수집중...</span>
         `;
     } else {
-      const color = getRatingColor(rating);
+      const parsedRating = parseFloat(rating);
+      const fontWeight = parsedRating >= 4 ? '700' : '400';
 
       // Line 1: Icon + Rating
       let line1Html = `
-        <div style="display: flex; align-items: center; margin-top: 8px; margin-bottom: 4px;">
-          <img src="https://static.teamblind.com/img/www/favicon.ico" width="14" height="14" style="margin-right: 4px; vertical-align: middle; cursor: pointer;" class="blind-icon-link" title="블라인드 리뷰 보기">
-          <b style="color: ${color}; font-size:14px">${rating}</b>
+      <div 
+        class="blind-icon-link"
+        title="블라인드 리뷰 보러가기" 
+        style="padding: 8px; 
+        background-color: rgb(255, 255, 255); 
+        border: 1px solid rgb(229, 236, 255); 
+        border-radius: 14px; 
+        display: flex; 
+        align-items: center; 
+        justify-content: space-between; 
+        cursor: pointer;
+        margin-top: 8px;
+        "
+      >
+        <div style="display: flex; align-items: center;">
+          <img src="https://static.teamblind.com/img/www/favicon.ico" width="20" height="20" style="margin-right: 8px;">
+          <span style="color: #333; font-size: 14px;">블라인드 평점</span>
         </div>
+        <div style="display: flex; align-items: center;">
+          <span style="font-size: 16px; font-weight: ${fontWeight}; margin-right: 5px;">${parsedRating}</span>
+        </div>
+      </div>
+
       `;
 
       // Line 2: Financial Data (if available)
@@ -67,22 +87,30 @@ const UIManager = {
         }
 
         line2Html = `
-          <div style="display: flex; gap: 6px;  border-radius: 3px;">
-            <table style="width: 100%; border: 1px solid #ccc;">
-              <thead>
-                <th style="padding: 2px 4px;">매출</th>
-                <th style="padding: 2px 4px;">영업이익</th>
-                <th style="padding: 2px 4px;">순이익</th>
-              </thead>
-              <tbody>
-                <tr style="text-align: center; background-color: ${bgColor};">
-                  <td style="padding: 2px 4px;">${formatMoney(salesAmount)}</td>
-                  <td style="padding: 2px 4px;">${formatMoney(operatingIncome)}</td>
-                  <td style="padding: 2px 4px;">${formatMoney(netIncome)}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <div 
+            style="display: flex; width: 100%; 
+            text-align: center; 
+            border-radius: 14px; 
+            border: 1px solid rgb(229, 236, 255);
+            overflow: hidden;
+            margin-top: 8px;
+            "
+          >
+            <div style="flex: 1;">
+                <div style="font-weight: bold; padding: 8px 0px 6px 0px;">매출</div>
+                <div style="background-color: ${bgColor}; padding: 6px 0px 8px 0px;">${formatMoney(salesAmount)}</div>
+            </div>
+
+            <div style="flex: 1;">
+                <div style="font-weight: bold; padding: 8px 0px 6px 0px;">영업이익</div>
+                <div style="background-color: ${bgColor}; padding: 6px 0px 8px 0px;">${formatMoney(operatingIncome)}</div>
+            </div>
+
+            <div style="flex: 1;">
+                <div style="font-weight: bold; padding: 8px 0px 6px 0px;">순이익</div>
+                <div style="background-color: ${bgColor}; padding: 6px 0px 8px 0px;">${formatMoney(netIncome)}</div>
+            </div>
+        </div>
         `;
       }
 

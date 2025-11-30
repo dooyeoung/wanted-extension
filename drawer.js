@@ -174,9 +174,9 @@ const DrawerManager = {
         <div class="drawer-item-name" style="flex: 3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; text-decoration: underline;" title="원티드 상세 페이지 이동">${companyName}</div>
         <div style="display: flex; flex: 1; align-items: center;">
           <div class="drawer-item-review" style="text-align: center; cursor: pointer;">
-          <img src="https://static.teamblind.com/img/www/favicon.ico" width="14" height="14" style="vertical-align: middle; margin-right: 4px;" title="블라인드 리뷰 보기">
+            <img src="https://static.teamblind.com/img/www/favicon.ico" width="14" height="14" style="vertical-align: middle; margin-right: 4px;" title="블라인드 리뷰 보기">
+            <span class="drawer-item-rating" style="text-align: center;">대기 중...</span>
           </div>
-          <div class="drawer-item-rating" style="text-align: center;">대기 중...</div>
         </div>
         <div class="drawer-item-sales" style="flex: 1; text-align: center;">-</div>
         <div class="drawer-item-op" style="flex: 1; text-align: center;">-</div>
@@ -218,8 +218,9 @@ const DrawerManager = {
     // updateItem에서는 평점 셀만 업데이트
     if (rating !== undefined) {
       if (rating !== '-') {
-        const color = getRatingColor(rating);
-        ratingCell.innerHTML = `<b style="color: ${color}; font-size:14px;">${rating}</b>`;
+        const parsedrating = parseFloat(rating);
+        const fontWeight = parsedrating >= 4 ? '700' : '400';
+        ratingCell.innerHTML = `<span style="font-size:14px; font-weight: ${fontWeight}">${parsedrating}</span>`;
       } else {
         ratingCell.innerHTML = '-';
       }

@@ -14,8 +14,8 @@ const DetailManager = {
             blindDiv.className = 'wanted-rating-blind-info';
             blindDiv.style.padding = '12px';
             blindDiv.style.backgroundColor = '#fff';
-            blindDiv.style.border = '1px solid #e1e2e3';
-            blindDiv.style.borderRadius = '8px';
+            blindDiv.style.border = '1px solid rgb(229, 236, 255)';
+            blindDiv.style.borderRadius = '14px';
             blindDiv.style.display = 'flex';
             blindDiv.style.alignItems = 'center';
             blindDiv.style.justifyContent = 'space-between';
@@ -29,10 +29,10 @@ const DetailManager = {
             blindDiv.innerHTML = `
         <div style="display: flex; align-items: center;">
           <img src="https://static.teamblind.com/img/www/favicon.ico" width="20" height="20" style="margin-right: 8px;">
-          <span style="font-weight: bold; color: #333; font-size: 14px;">블라인드 평점</span>
+          <span style="color: #333; font-size: 14px;">블라인드 평점</span>
         </div>
         <div style="display: flex; align-items: center;">
-          <span style="font-size: 16px; font-weight: bold; color: #333; margin-right: 5px;">${rating}</span>
+          <span style="font-size: 16px; font-weight: bold; margin-right: 5px;">${rating}</span>
         </div>
       `;
 
@@ -61,28 +61,30 @@ const DetailManager = {
 
             const finDiv = document.createElement('div');
             finDiv.className = 'wanted-rating-financial-info';
-            finDiv.style.padding = '12px';
-            finDiv.style.backgroundColor = bgColor;
-            finDiv.style.borderRadius = '8px';
-            finDiv.style.border = '1px solid #e1e2e3';
-            finDiv.style.fontSize = '14px';
-            finDiv.style.color = '#333';
 
             finDiv.innerHTML = `
-        <div style="font-weight: bold; margin-bottom: 8px; color: #171717;">${year}년 재무정보</div>
-        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-          <span style="">매출액</span>
-          <span style="font-weight: 600;">${formatMoney(salesAmount)}</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-          <span style="">영업이익</span>
-          <span style="font-weight: 600;">${formatMoney(operatingIncome)}</span>
-        </div>
-        <div style="display: flex; justify-content: space-between;">
-          <span style="">당기순이익</span>
-          <span style="font-weight: 600;">${formatMoney(netIncome)}</span>
-        </div>
-      `;
+            <div style="display: flex; width: 100%; 
+                text-align: center; 
+                border-radius: 14px; 
+                border: 1px solid rgb(229, 236, 255);
+                overflow: hidden;"
+            >
+                    <div style="flex: 1;">
+                        <div style="font-weight: bold; padding: 8px 0px 6px 0px;">매출</div>
+                        <div style="background-color: ${bgColor}; padding: 6px 0px 8px 0px;">${formatMoney(salesAmount)}</div>
+                    </div>
+
+                    <div style="flex: 1;">
+                        <div style="font-weight: bold; padding: 8px 0px 6px 0px;">영업이익</div>
+                        <div style="background-color: ${bgColor}; padding: 6px 0px 8px 0px;">${formatMoney(operatingIncome)}</div>
+                    </div>
+
+                    <div style="flex: 1;">
+                        <div style="font-weight: bold; padding: 8px 0px 6px 0px;">순이익</div>
+                        <div style="background-color: ${bgColor}; padding: 6px 0px 8px 0px;">${formatMoney(netIncome)}</div>
+                    </div>
+                </div>
+            `;
 
             // Insert after the Blind div (which is nextSibling of button now)
             const blindDiv = parent.querySelector('.wanted-rating-blind-info');
