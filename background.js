@@ -38,7 +38,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           sendResponse({ success: false, errorType: 'forbidden', status: err.status });
         }
         else if (err.status === 404) {
-          console.error('[BACKGROUND] Not Found error', err.status);
+          // console.error('[BACKGROUND] Not Found error', err.status);
           sendResponse({ success: false, errorType: 'notfound', status: err.status });
         }
         else {

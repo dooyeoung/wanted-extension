@@ -144,7 +144,6 @@ const JobScanner = {
 
                 // Batch Rate Limiting: Pause for 3 seconds every 30 requests
                 if (this.requestCount > 0 && this.requestCount % 30 === 0) {
-                    console.log(`[WantedRating] Batch limit reached (${this.requestCount}). Pausing for 3 seconds...`);
                     await sleep(3000);
                 }
 
@@ -297,6 +296,54 @@ const JobScanner = {
         }, 200); // Debounce scroll events
     },
 
+    retryCompany: function (companyName) {
+        // Check if already in queue
+        if (this.queue.some(item => item.name === companyName)) {
+            console.log(`[JobScanner] Skipping retry for ${companyName} (Already in queue). Queue: ${this.queue.length}, Active: ${this.activeRequests}`);
+            this.processQueue(); // Ensure queue is moving
+            return;
+        }
+
+        console.log(`[JobScanner] Retrying ${companyName}... Queue: ${this.queue.length}, Active: ${this.activeRequests}`);
+
+        // Force expire cache
+        if (this.ratingsCache[companyName]) {
+            if (typeof this.ratingsCache[companyName] === 'object') {
+                this.ratingsCache[companyName].expired_at = 0; // Expire immediately
+            } else {
+                // Convert legacy to object and expire
+                this.ratingsCache[companyName] = {
+                    rating: this.ratingsCache[companyName],
+                    expired_at: 0
+                };
+            }
+            StorageManager.save(this.ratingsCache);
+        }
+
+        // Add to queue (force rating fetch)
+        // We don't have the ID here easily unless we store it in drawer or lookup.
+        // But scanVisibleCompanies can find it. 
+        // However, if we are in drawer, we might not have the ID handy if it wasn't stored in items array properly or if we just want to re-fetch rating.
+        // The queue item needs {name, id, skipRating}.
+        // Let's try to find ID from DrawerManager items or just pass null if only rating is needed (JobScanner handles ID for financial mostly).
+        // Actually JobScanner.processNextItem uses ID for financial fetch.
+        // If we only want rating, ID is not strictly required for BlindAPI.fetchReview.
+
+        // Let's look up ID from DrawerManager items if possible.
+        const drawerItem = DrawerManager.items.find(it => it.name === companyName);
+        // We didn't store ID in DrawerManager items explicitly in the array, but we might have.
+        // Looking at drawer.js: this.items.push({ name: companyName, rating: null, financial: null, jobs: [], element: newRow });
+        // ID is not stored.
+        // But wait, `addItem` takes `companyId`.
+        // We should probably store it.
+
+        // For now, let's pass null for ID. If we need financial retry, we might need ID.
+        // But the user asked for "Blind rating retry".
+
+        this.queue.push({ name: companyName, id: null, skipRating: false });
+        this.processQueue();
+    },
+
     init: async function (autoShowDrawer = true) {
         this.ratingsCache = await StorageManager.load();
 
@@ -348,6 +395,7 @@ const JobScanner = {
             // We only want to know when new LI elements are added to the UL.
             // We do NOT want to know when we modify the content inside those LIs (injecting ratings).
             observer.observe(targetNode, { childList: true, subtree: false });
+            // Also observe for removal to keep list clean? No need for now.
         }
 
         chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {

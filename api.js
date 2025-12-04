@@ -19,15 +19,15 @@ const BlindAPI = {
           } else {
 
             if (response?.errorType === 'forbidden') {
-              console.error(`Failed to fetch for ${companyName}:`, response?.error || 'forbidden error', response.status);
+              // console.error(`Failed to fetch for ${companyName}:`, response?.error || 'forbidden error', response.status);
               resolve({ rating: -3 });
             }
             else if (response?.errorType === 'notfound') {
-              console.error(`Failed to fetch for ${companyName}:`, response?.error || 'notfound error', response.status);
+              // console.error(`Failed to fetch for ${companyName}:`, response?.error || 'notfound error', response.status);
               resolve({ rating: -2 });
             }
             else {
-              console.error(`Failed to fetch for ${companyName}:`, response?.error || 'Unknown error');
+              // console.error(`Failed to fetch for ${companyName}:`, response?.error || 'Unknown error');
               resolve({ rating: -1 });
             }
           }

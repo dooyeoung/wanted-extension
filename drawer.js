@@ -508,9 +508,17 @@ const DrawerManager = {
       const targets = document.querySelectorAll('[data-rating="-3"]');
       if (targets.length > 0) {
         console.log(`[DrawerManager] Found ${targets.length} items with rating -3. Retrying...`);
-        // TODO: Implement actual retry logic here if needed
+        targets.forEach(target => {
+          const row = target.closest('.drawer-item-row');
+          if (row) {
+            const companyName = row.getAttribute('drawer-companyname');
+            if (companyName) {
+              JobScanner.retryCompany(companyName);
+            }
+          }
+        });
       }
-    }, 10000);
+    }, 60000);
   },
 
   stopRetryCheck: function () {
