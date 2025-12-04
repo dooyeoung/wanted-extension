@@ -35,7 +35,7 @@ const DrawerManager = {
 
     const drawerHtml = `
       <div id="blind-rating-drawer" 
-        style="position: fixed; top: 0; right: 0; width: 650px; height: 100%; background-color: white; 
+        style="position: fixed; top: 0; right: 0; width: 480px; height: 100%; background-color: white; 
         border-left: 1px solid #e0e0e0; box-shadow: -2px 0 5px rgba(0,0,0,0.1); z-index: 9999; 
         display: flex; flex-direction: column; padding: 10px; box-sizing: border-box;"
       >
@@ -190,13 +190,13 @@ const DrawerManager = {
       <div class="drawer-item-row" style="display: flex; flex-direction: column; border-bottom: 1px solid #eee;">
         <div style="display: flex; align-items: center;">
           
-          <div class="drawer-item-toggle" style="text-align: center; cursor: pointer;">▷</div>
-          <div class="drawer-item-name" 
-            style="flex: 3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 8px;" >
+          <div class="drawer-item-toggle" style="text-align: center; cursor: pointer; font-size: 0.7em;">▷</div>
+          <div class="drawer-item-companyname" 
+            style="flex: 3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 8px; cursor: pointer; font-size: 0.9em;" title="화면에서 찾기">
             ${companyName}
           </div>
 
-          <div style="display: flex; flex: 1; align-items: center;">
+          <div style="display: flex; flex: 1; align-items: center; font-size: 0.9em;">
             <div class="drawer-item-review" style="text-align: center; cursor: pointer;">
               <img src="https://static.teamblind.com/img/www/favicon.ico" width="14" height="14" style="vertical-align: middle; margin-right: 4px;" title="블라인드 리뷰 보기">
               <span class="drawer-item-rating" style="text-align: center;">대기 중...</span>
@@ -204,7 +204,7 @@ const DrawerManager = {
           </div>
 
           <div class="drawer-item-financial" 
-            style="display: flex; flex: 3; align-items: center; cursor: pointer; padding: 8px" title="원티드 상세 페이지 이동">
+            style="display: flex; flex: 3; align-items: center; cursor: pointer; padding: 8px; font-size: 0.9em;" title="원티드 상세 페이지 이동">
             <div class="drawer-item-sales" style="flex: 1; text-align: center;">-</div>
             <div class="drawer-item-op" style="flex: 1; text-align: center;">-</div>
             <div class="drawer-item-net" style="flex: 1; text-align: center;">-</div>
@@ -212,7 +212,7 @@ const DrawerManager = {
 
         </div>
 
-        <div class="drawer-item-jobs" style="padding: 0px 0px 8px 8px; display: none;"></div>
+        <div class="drawer-item-jobs" style="padding: 8px 0px 8px 8px; font-size: 0.9em; display: none;"></div>
       </div>
   `;
     this.list.insertAdjacentHTML('beforeend', itemHtml);
@@ -231,14 +231,74 @@ const DrawerManager = {
     const reviewCell = newRow.querySelector('.drawer-item-review');
     reviewCell.onclick = () => window.open(`https://www.teamblind.com/kr/company/${encodeURIComponent(extractCompanyName(companyName))}/reviews`, '_blank');
 
-    // Add click listener to name cell
-    const nameCell = newRow.querySelector('.drawer-item-financial');
+    // Add click listener to company name (Scroll to card)
+    const companyNameCell = newRow.querySelector('.drawer-item-companyname');
+    let focusIndex = 0; // Track which card to focus next
+
+    companyNameCell.onclick = () => {
+      const buttons = document.querySelectorAll(`[data-cy="job-card"] button[data-company-name="${companyName}"]`);
+      if (buttons.length > 0) {
+        // Wrap around if index is out of bounds (e.g. list changed)
+        if (focusIndex >= buttons.length) focusIndex = 0;
+
+        const card = buttons[focusIndex].closest('[data-cy="job-card"]');
+        if (card) {
+          card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+          // Clear existing timeout and reset if already animating
+          if (card._highlightTimer) {
+            clearTimeout(card._highlightTimer);
+            card.style.transition = 'none';
+            card.style.boxShadow = card._originalStyles.boxShadow;
+            card.style.transform = card._originalStyles.transform;
+            void card.offsetWidth; // Force reflow
+          } else {
+            // Capture original styles
+            card._originalStyles = {
+              boxShadow: card.style.boxShadow,
+              transform: card.style.transform,
+              transition: card.style.transition
+            };
+          }
+
+          // Apply highlight
+          card.style.transition = 'all 0.5s ease';
+          card.style.boxShadow = '0 0 0 4px rgba(0, 119, 204, 0.5)';
+          card.style.borderRadius = '12px';
+          card.style.transform = 'scale(1.02)';
+
+          card._highlightTimer = setTimeout(() => {
+            if (card._originalStyles) {
+              card.style.boxShadow = card._originalStyles.boxShadow;
+              card.style.transform = card._originalStyles.transform;
+
+              // Wait for transition to finish before clearing transition property
+              setTimeout(() => {
+                // Only clear if no new animation started
+                if (!card._highlightTimer) {
+                  card.style.transition = card._originalStyles.transition;
+                  delete card._originalStyles;
+                }
+              }, 500);
+            }
+            delete card._highlightTimer;
+          }, 1500);
+        }
+
+        // Increment for next click
+        focusIndex = (focusIndex + 1) % buttons.length;
+      } else {
+        alert('현재 화면에서 해당 회사의 공고를 찾을 수 없습니다.');
+      }
+    };
+
+    // Add click listener to financial cell (Open Wanted Detail)
+    const financialCell = newRow.querySelector('.drawer-item-financial');
     if (companyId) {
-      nameCell.onclick = () => window.open(`https://www.wanted.co.kr/company/${companyId}`, '_blank');
+      financialCell.onclick = () => window.open(`https://www.wanted.co.kr/company/${companyId}`, '_blank');
     } else {
-      nameCell.style.cursor = 'default';
-      nameCell.style.textDecoration = 'none';
-      nameCell.title = '';
+      financialCell.style.cursor = 'default';
+      financialCell.title = '';
     }
 
     this.items.push({ name: companyName, rating: null, financial: null, jobs: [], element: newRow });

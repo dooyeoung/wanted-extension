@@ -33,8 +33,8 @@ const ChartManager = {
                     x: rating,
                     y: netIncome,
                     label: item.name,
-                    companyId: item.element.querySelector('.drawer-item-name')?.onclick ?
-                        item.element.querySelector('.drawer-item-name').onclick.toString().match(/company\/(\d+)/)?.[1] : null,
+                    companyId: item.element.querySelector('.drawer-item-companyname')?.onclick ?
+                        item.element.querySelector('.drawer-item-companyname').onclick.toString().match(/company\/(\d+)/)?.[1] : null,
                     salesAmount: item.financial.salesAmount || 0,
                     backgroundColor: isGoodCompany ? 'rgba(76, 175, 80, 0.6)' : 'rgba(54, 162, 235, 0.6)', // Green or Blue
                     borderColor: isGoodCompany ? 'rgba(76, 175, 80, 1)' : 'rgba(54, 162, 235, 1)'
