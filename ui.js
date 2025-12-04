@@ -40,10 +40,15 @@ const UIManager = {
     }
 
     // Update content based on rating state
+    // Update content based on rating state
+    let line1Html = '';
+
     if (rating === 'LOADING') {
-      scoreElement.innerHTML = `
-            <span style="color: #999;">데이터 수집중...</span>
-        `;
+      line1Html = `
+        <div style="padding: 8px; margin-top: 8px; color: #999; font-size: 14px;">
+          데이터 수집중...
+        </div>
+      `;
     } else {
       let displayRating = rating;
       let fontWeight = '400';
@@ -59,7 +64,7 @@ const UIManager = {
       }
 
       // Line 1: Icon + Rating
-      let line1Html = `
+      line1Html = `
       <div 
         class="blind-icon-link"
         title="블라인드 리뷰 보러가기" 
@@ -83,64 +88,64 @@ const UIManager = {
         </div>
       </div>
       `;
-
-      // Line 2: Financial Data (if available)
-      let line2Html = '';
-      if (financial) {
-        const { salesAmount, operatingIncome, netIncome } = financial;
-        let bgColor = '#f5f5f5'; // Default Gray
-        if (netIncome > 0 && operatingIncome > 0) {
-          bgColor = 'rgb(158 237 184)'; // Green
-        } else if (operatingIncome < 0 && netIncome < 0) {
-          bgColor = '#ffccc7'; // Red (light red for background)
-        }
-
-        line2Html = `
-          <div 
-            style="display: flex; width: 100%; 
-            text-align: center; 
-            border-radius: 14px; 
-            border: 1px solid rgb(229, 236, 255);
-            overflow: hidden;
-            margin-top: 8px;
-            "
-          >
-            <div style="flex: 1;">
-                <div style="font-weight: bold; padding: 8px 0px 6px 0px;">매출</div>
-                <div style="background-color: ${bgColor}; padding: 6px 0px 8px 0px;">${formatMoney(salesAmount)}</div>
-            </div>
-
-            <div style="flex: 1;">
-                <div style="font-weight: bold; padding: 8px 0px 6px 0px;">영업이익</div>
-                <div style="background-color: ${bgColor}; padding: 6px 0px 8px 0px;">${formatMoney(operatingIncome)}</div>
-            </div>
-
-            <div style="flex: 1;">
-                <div style="font-weight: bold; padding: 8px 0px 6px 0px;">순이익</div>
-                <div style="background-color: ${bgColor}; padding: 6px 0px 8px 0px;">${formatMoney(netIncome)}</div>
-            </div>
-        </div>
-        `;
-      }
-
-      scoreElement.innerHTML = line1Html + line2Html;
-
-      // Re-attach event listener for the icon
-      const iconLink = scoreElement.querySelector('.blind-icon-link');
-      if (iconLink) {
-        iconLink.onclick = (e) => {
-          e.stopPropagation(); e.preventDefault();
-          chrome.runtime.sendMessage({
-            type: 'GA_EVENT',
-            eventName: 'click_blind_icon',
-            params: { company: companyName }
-          });
-          window.open(`https://www.teamblind.com/kr/company/${encodeURIComponent(extractCompanyName(companyName))}/reviews`, '_blank');
-        };
-      }
-
-      // Update attribute
-      element.parentElement.parentElement.setAttribute("blind-rating", rating);
     }
+
+    // Line 2: Financial Data (if available)
+    let line2Html = '';
+    if (financial) {
+      const { salesAmount, operatingIncome, netIncome } = financial;
+      let bgColor = '#f5f5f5'; // Default Gray
+      if (netIncome > 0 && operatingIncome > 0) {
+        bgColor = 'rgb(158 237 184)'; // Green
+      } else if (operatingIncome < 0 && netIncome < 0) {
+        bgColor = '#ffccc7'; // Red (light red for background)
+      }
+
+      line2Html = `
+        <div 
+          style="display: flex; width: 100%; 
+          text-align: center; 
+          border-radius: 14px; 
+          border: 1px solid rgb(229, 236, 255);
+          overflow: hidden;
+          margin-top: 8px;
+          "
+        >
+          <div style="flex: 1;">
+              <div style="font-weight: bold; padding: 8px 0px 6px 0px;">매출</div>
+              <div style="background-color: ${bgColor}; padding: 6px 0px 8px 0px;">${formatMoney(salesAmount)}</div>
+          </div>
+
+          <div style="flex: 1;">
+              <div style="font-weight: bold; padding: 8px 0px 6px 0px;">영업이익</div>
+              <div style="background-color: ${bgColor}; padding: 6px 0px 8px 0px;">${formatMoney(operatingIncome)}</div>
+          </div>
+
+          <div style="flex: 1;">
+              <div style="font-weight: bold; padding: 8px 0px 6px 0px;">순이익</div>
+              <div style="background-color: ${bgColor}; padding: 6px 0px 8px 0px;">${formatMoney(netIncome)}</div>
+          </div>
+      </div>
+      `;
+    }
+
+    scoreElement.innerHTML = line1Html + line2Html;
+
+    // Re-attach event listener for the icon
+    const iconLink = scoreElement.querySelector('.blind-icon-link');
+    if (iconLink) {
+      iconLink.onclick = (e) => {
+        e.stopPropagation(); e.preventDefault();
+        chrome.runtime.sendMessage({
+          type: 'GA_EVENT',
+          eventName: 'click_blind_icon',
+          params: { company: companyName }
+        });
+        window.open(`https://www.teamblind.com/kr/company/${encodeURIComponent(extractCompanyName(companyName))}/reviews`, '_blank');
+      };
+    }
+
+    // Update attribute
+    element.parentElement.parentElement.setAttribute("blind-rating", rating);
   }
 };

@@ -42,13 +42,14 @@ const JobScanner = {
         try {
             const processRating = (rating) => {
                 DrawerManager.updateItem(name, rating);
-                if (rating >= 0) {
-                    // Get financial data from cache if available
-                    let financial = undefined;
-                    if (this.ratingsCache[name] && typeof this.ratingsCache[name] === 'object') {
-                        financial = this.ratingsCache[name].financial;
-                    }
 
+                // Get financial data from cache if available (regardless of rating)
+                let financial = undefined;
+                if (this.ratingsCache[name] && typeof this.ratingsCache[name] === 'object') {
+                    financial = this.ratingsCache[name].financial;
+                }
+
+                if (rating >= 0) {
                     document.querySelectorAll(`[data-cy="job-card"] button[data-company-name="${name}"]`).forEach(button => {
                         const container = button.closest('[data-cy="job-card"]');
                         if (container) {
@@ -59,7 +60,7 @@ const JobScanner = {
                     document.querySelectorAll(`[data-cy="job-card"] button[data-company-name="${name}"]`).forEach(button => {
                         const container = button.closest('[data-cy="job-card"]');
                         if (container) {
-                            UIManager.injectRating(container, rating, name, undefined);
+                            UIManager.injectRating(container, rating, name, financial);
                         }
                     });
                 }
@@ -102,7 +103,7 @@ const JobScanner = {
                                             }
                                         }
                                     } else {
-                                        console.warn(`[WantedRating] Failed to get financial data for ${name}:`, finResponse?.error);
+                                        // console.warn(`[WantedRating] Failed to get financial data for ${name}:`, finResponse?.error);
                                     }
                                 }
                             );
@@ -228,7 +229,8 @@ const JobScanner = {
                         // Inject LOADING state
                         const container = button.closest('[data-cy="job-card"]');
                         if (container) {
-                            UIManager.injectRating(container, 'LOADING', name);
+                            const financial = cached.financial; // Pass financial info if available
+                            UIManager.injectRating(container, 'LOADING', name, financial);
                         }
                     }
                 } else {
