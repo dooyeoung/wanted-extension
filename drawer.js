@@ -382,5 +382,8 @@ const DrawerManager = {
     this.items = [];
     this.sortState = { key: null, direction: 'desc' };
     this.updateSortIndicator();
+    if (window.ChartManager) {
+      ChartManager.destroy();
+    }
   }
 };

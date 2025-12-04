@@ -69,6 +69,16 @@ const JobScanner = {
   processedCompanies: new Set(),
   scrollTimer: null,
 
+  // Reset Scanner State
+  reset: function () {
+    this.queue = [];
+    this.activeRequests = 0;
+    this.totalCompanies = 0;
+    this.completedCompanies = 0;
+    this.processedCompanies.clear();
+    // Do not clear cache as it is valuable
+  },
+
   // Queue Consumer
   processQueue: function () {
     while (this.queue.length > 0 && this.activeRequests < this.MAX_CONCURRENCY) {
@@ -385,7 +395,7 @@ const JobScanner = {
 // --- URL Observer & Page Transition ---
 let lastUrl = location.href;
 
-const handlePageTransition = async () => {
+const handlePageTransition = async (previousUrlString) => {
   const isListingPage = window.location.pathname.startsWith('/wdlist');
   const isDetailPage = window.location.pathname.startsWith('/wd/') && !isNaN(parseInt(window.location.pathname.split('/')[2]));
 
@@ -401,14 +411,43 @@ const handlePageTransition = async () => {
   });
 
   if (isListingPage) {
+    let shouldReset = false;
+
+    if (previousUrlString) {
+      const currentUrl = new URL(window.location.href);
+      const previousUrl = new URL(previousUrlString);
+
+      // Check if pathname is same but search params changed (Filter change)
+      if (currentUrl.pathname === previousUrl.pathname && currentUrl.search !== previousUrl.search) {
+        shouldReset = true;
+      }
+      // Check if we moved from another page TO listing page (e.g. from detail to list)
+      // In this case, we usually don't want to reset if we just went back.
+      // But if we came from a different listing category, pathname would change.
+      // If pathname changes (e.g. /wdlist/518 -> /wdlist/519), we SHOULD reset.
+      if (currentUrl.pathname !== previousUrl.pathname) {
+        shouldReset = true;
+      }
+    }
+
     // Ensure drawer is initialized and visible
     if (!JobScanner.isDrawerInitialized) {
       await JobScanner.init(true);
     } else {
       DrawerManager.show();
     }
-    // Trigger scan in case we navigated back to new content
-    JobScanner.scanVisibleCompanies();
+
+    if (shouldReset) {
+      console.log('[WantedRating] Filter change detected. Resetting scanner.');
+      JobScanner.reset();
+      DrawerManager.clear();
+      // Do NOT scan immediately. Wait for MutationObserver to detect new content.
+      // Scanning now might process old DOM elements before they are removed.
+    } else {
+      // Trigger scan if not resetting (e.g. initial load or simple navigation)
+      JobScanner.scanVisibleCompanies();
+    }
+
   } else if (isDetailPage) {
     // Ensure drawer is initialized (but hidden)
     if (!JobScanner.isDrawerInitialized) {
@@ -426,8 +465,9 @@ const handlePageTransition = async () => {
 const observeUrlChanges = () => {
   const observer = new MutationObserver(() => {
     if (location.href !== lastUrl) {
+      const previousUrl = lastUrl;
       lastUrl = location.href;
-      handlePageTransition();
+      handlePageTransition(previousUrl);
     }
   });
   observer.observe(document, { subtree: true, childList: true });
