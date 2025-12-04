@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Job Radar",
-  "version": "1.0",
+  "version": "1.01",
   "description": "회사 평가 정보와 재무 정보를 함께 표시합니다.",
   "permissions": [
     "storage"

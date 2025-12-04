@@ -67,6 +67,9 @@ const JobScanner = {
   isDrawerInitialized: false,
   processedCompanies: new Set(),
   scrollTimer: null,
+  baseDelay: 1500, // Increased base delay
+  consecutiveErrors: 0,
+  requestCount: 0, // Track number of requests for batch pause
 
   // Reset Scanner State
   reset: function () {
@@ -196,7 +199,14 @@ const JobScanner = {
         const delay = Math.floor(Math.random() * (600 - 200 + 1) + 200);
         await sleep(delay);
 
+        // Batch Rate Limiting: Pause for 3 seconds every 30 requests
+        if (this.requestCount > 0 && this.requestCount % 30 === 0) {
+          console.log(`[WantedRating] Batch limit reached (${this.requestCount}). Pausing for 3 seconds...`);
+          await sleep(3000);
+        }
+
         const result = await BlindAPI.fetchReview(extractCompanyName(name));
+        this.requestCount++; // Increment request count
         const { rating } = result;
 
         // Update cache with rating, preserving hash if exists
