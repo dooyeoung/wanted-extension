@@ -20,7 +20,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     const url = `https://www.teamblind.com/kr/company/${encodeURIComponent(company)}/reviews`;
 
     fetch(url)
-      .then((res) => res.text())
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        return res.text();
+      })
       .then((html) => {
         console.log(`[BACKGROUND] Fetched HTML for ${url} ${message.company}. HTML content (first 500 chars):`, html.substring(0, 500));
         sendResponse({ success: true, html });
