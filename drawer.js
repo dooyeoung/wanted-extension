@@ -9,16 +9,19 @@ const DrawerManager = {
     this.isFullHidden = false;
     if (this.drawer) this.drawer.style.display = 'none';
     if (this.openButton) this.openButton.style.display = 'block';
+    this.stopRetryCheck();
   },
   hideFull: function () {
     this.isFullHidden = true;
     if (this.drawer) this.drawer.style.display = 'none';
     if (this.openButton) this.openButton.style.display = 'none';
+    this.stopRetryCheck();
   },
   show: function () {
     this.isFullHidden = false;
     if (this.drawer) this.drawer.style.display = 'flex';
     if (this.openButton) this.openButton.style.display = 'none';
+    this.startRetryCheck();
 
     chrome.runtime.sendMessage({
       type: 'GA_EVENT',
@@ -83,6 +86,7 @@ const DrawerManager = {
     this.drawer.querySelector('#close-drawer').onclick = () => {
       this.drawer.style.display = 'none';
       this.stopChartUpdates();
+      this.stopRetryCheck();
       this.updateButtonAndStatusDisplay();
     };
 
@@ -99,6 +103,8 @@ const DrawerManager = {
       eventName: 'open_drawer',
       params: { source: 'create' }
     });
+
+    this.startRetryCheck();
   },
 
   createOpenButton: function () {
@@ -493,6 +499,24 @@ const DrawerManager = {
     this.updateSortIndicator();
     if (window.ChartManager) {
       ChartManager.destroy();
+    }
+  },
+
+  startRetryCheck: function () {
+    this.stopRetryCheck();
+    this.retryCheckInterval = setInterval(() => {
+      const targets = document.querySelectorAll('[data-rating="-3"]');
+      if (targets.length > 0) {
+        console.log(`[DrawerManager] Found ${targets.length} items with rating -3. Retrying...`);
+        // TODO: Implement actual retry logic here if needed
+      }
+    }, 10000);
+  },
+
+  stopRetryCheck: function () {
+    if (this.retryCheckInterval) {
+      clearInterval(this.retryCheckInterval);
+      this.retryCheckInterval = null;
     }
   }
 };
