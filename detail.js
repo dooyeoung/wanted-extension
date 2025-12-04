@@ -101,7 +101,14 @@ const DetailManager = {
 
         while (retries < maxRetries) {
             // Try to find company ID from links (e.g. /company/12345)
-            const companyLink = document.querySelector('a[href^="/company/"]');
+            const companyLink = document.querySelector(
+                'a[href^="/company/"]' +
+                '[data-company-id]' +
+                '[data-company-name]' +
+                '[data-position-id]' +
+                '[data-position-name]' +
+                '[data-attribute-id]'
+            );
 
             if (companyLink) {
                 const href = companyLink.getAttribute('href');
