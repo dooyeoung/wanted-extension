@@ -172,11 +172,6 @@ const DrawerManager = {
     // Check if company already exists
     const existingItem = this.items.find(it => it.name === companyName);
 
-    if (companyName == "빗썸") {
-
-      console.log(companyName, companyId, jobInfo)
-      console.log(existingItem);
-    }
     if (existingItem) {
       // Add job if new
       if (jobInfo && !existingItem.jobs.some(j => j.link === jobInfo.link)) {
@@ -263,7 +258,7 @@ const DrawerManager = {
 
           // Apply highlight
           card.style.transition = 'all 0.5s ease';
-          card.style.boxShadow = '0 0 0 4px rgba(0, 119, 204, 0.5)';
+          card.style.boxShadow = 'inset 0 0 0 4px rgba(0, 119, 204, 0.5)';
           card.style.borderRadius = '12px';
           card.style.transform = 'scale(1.02)';
 
@@ -330,7 +325,6 @@ const DrawerManager = {
     if (rating !== undefined) item.rating = rating;
     if (financial !== undefined) item.financial = financial;
 
-    console.log(item);
     const ratingCell = item.element.querySelector('.drawer-item-rating');
     const finaceCell = item.element.querySelector('.drawer-item-financial');
     const salesCell = item.element.querySelector('.drawer-item-sales');
@@ -389,7 +383,7 @@ const DrawerManager = {
     }
 
     if (targetHeader) {
-      const arrow = this.sortState.direction === 'asc' ? ' ▲' : ' ▼';
+      const arrow = this.sortState.direction === 'asc' ? ' △' : ' ▽';
       targetHeader.textContent += arrow;
     }
   },

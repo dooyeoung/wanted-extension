@@ -21,7 +21,6 @@ function sortJobList(ulElement) {
 function addBlindReviewSortButton() {
   const sortFilterUl = document.querySelector('ul.SortFilter_SortFilter__list__QuSd6');
   if (!sortFilterUl) {
-    console.log("Sort filter UL not found.");
     return;
   }
 
@@ -456,7 +455,6 @@ const handlePageTransition = async (previousUrlString) => {
     }
 
     if (shouldReset) {
-      console.log('[WantedRating] Filter change detected. Resetting scanner.');
       JobScanner.reset();
       DrawerManager.clear();
       // Do NOT scan immediately. Wait for MutationObserver to detect new content.
