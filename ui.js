@@ -27,7 +27,7 @@ const UIManager = {
   injectRating: function (element, rating, companyName, financial) {
     let scoreElement = element.querySelector('.blind-score');
 
-    // Create element if it doesn't exist
+    // 요소가 없으면 생성
     if (!scoreElement) {
       const htmlContent = `
           <div class="blind-score" style="padding-left: 4px; padding-top: 4px; font-size: 0.8125rem; font-weight: 500;">
@@ -35,12 +35,11 @@ const UIManager = {
         `;
       element.insertAdjacentHTML('beforeend', htmlContent);
       scoreElement = element.querySelector('.blind-score');
-      // Set attribute on container only once
+      // 컨테이너에 속성 한 번만 설정
       element.parentElement.parentElement.setAttribute("blind-rating", rating === 'LOADING' ? 0 : rating);
     }
 
-    // Update content based on rating state
-    // Update content based on rating state
+    // 평점 상태에 따라 콘텐츠 업데이트
     let line1Html = '';
 
     if (rating === 'LOADING') {
@@ -63,7 +62,7 @@ const UIManager = {
         displayRating = '-';
       }
 
-      // Line 1: Icon + Rating
+      // 1행: 아이콘 + 평점
       line1Html = `
       <div 
         class="blind-icon-link"
@@ -90,15 +89,15 @@ const UIManager = {
       `;
     }
 
-    // Line 2: Financial Data (if available)
+    // 2행: 재무 데이터 (가능한 경우)
     let line2Html = '';
     if (financial) {
       const { salesAmount, operatingIncome, netIncome } = financial;
-      let bgColor = '#f5f5f5'; // Default Gray
+      let bgColor = '#f5f5f5'; // 기본 회색
       if (netIncome > 0 && operatingIncome > 0) {
-        bgColor = 'rgb(158 237 184)'; // Green
+        bgColor = 'rgb(158 237 184)'; // 초록색
       } else if (operatingIncome < 0 && netIncome < 0) {
-        bgColor = '#ffccc7'; // Red (light red for background)
+        bgColor = '#ffccc7'; // 빨간색 (배경은 연한 빨간색)
       }
 
       line2Html = `
@@ -131,7 +130,7 @@ const UIManager = {
 
     scoreElement.innerHTML = line1Html + line2Html;
 
-    // Re-attach event listener for the icon
+    // 아이콘에 이벤트 리스너 다시 첨부
     const iconLink = scoreElement.querySelector('.blind-icon-link');
     if (iconLink) {
       iconLink.onclick = (e) => {
@@ -145,7 +144,7 @@ const UIManager = {
       };
     }
 
-    // Update attribute
+    // 속성 업데이트
     element.parentElement.parentElement.setAttribute("blind-rating", rating);
   }
 };

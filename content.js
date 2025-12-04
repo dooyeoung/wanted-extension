@@ -6,15 +6,15 @@ function sortJobList(ulElement) {
     return;
   }
 
-  const listItems = Array.from(ulElement.children); // Get all li children
+  const listItems = Array.from(ulElement.children); // 모든 li 자식 요소 가져오기
 
   listItems.sort((a, b) => {
     const ratingA = parseFloat(a.getAttribute('blind-rating')) || 0;
     const ratingB = parseFloat(b.getAttribute('blind-rating')) || 0;
-    return ratingB - ratingA; // Descending order (highest rating first)
+    return ratingB - ratingA; // 내림차순 정렬 (높은 평점 우선)
   });
 
-  // Clear existing list items and append sorted ones
+  // 기존 목록 항목 지우고 정렬된 항목 추가
   listItems.forEach(item => ulElement.appendChild(item));
 }
 
@@ -36,14 +36,14 @@ function addBlindReviewSortButton() {
   const blindReviewSortButton = document.getElementById('sort-by-blind-review');
   if (blindReviewSortButton) {
     blindReviewSortButton.onclick = (event) => {
-      // Remove selected class from all siblings (including native ones)
+      // 모든 형제 요소에서 selected 클래스 제거 (기본 요소 포함)
       sortFilterUl.querySelectorAll('li').forEach(li => {
         li.classList.remove('SortFilter_SortFilter__list__item__selected__k5thb');
         li.querySelector('span')?.classList.remove('SortFilter_SortFilter__list__item__selected__text__u7klW', 'wds-12dtfjt');
         li.querySelector('span')?.classList.add('wds-83zqyc');
       });
 
-      // Add selected class to the clicked item (our custom button)
+      // 클릭된 항목에 selected 클래스 추가 (사용자 정의 버튼)
       const parentLi = event.currentTarget.closest('li');
       parentLi.classList.add('SortFilter_SortFilter__list__item__selected__k5thb');
       parentLi.querySelector('span')?.classList.add('SortFilter_SortFilter__list__item__selected__text__u7klW', 'wds-12dtfjt');
@@ -56,7 +56,7 @@ function addBlindReviewSortButton() {
 }
 
 
-// --- URL Observer & Page Transition ---
+// --- URL 관찰자 및 페이지 전환 ---
 let lastUrl = location.href;
 
 const handlePageTransition = async (previousUrlString) => {
@@ -81,20 +81,20 @@ const handlePageTransition = async (previousUrlString) => {
       const currentUrl = new URL(window.location.href);
       const previousUrl = new URL(previousUrlString);
 
-      // Check if pathname is same but search params changed (Filter change)
+      // 경로명은 같지만 검색 매개변수가 변경되었는지 확인 (필터 변경)
       if (currentUrl.pathname === previousUrl.pathname && currentUrl.search !== previousUrl.search) {
         shouldReset = true;
       }
-      // Check if we moved from another page TO listing page (e.g. from detail to list)
-      // In this case, we usually don't want to reset if we just went back.
-      // But if we came from a different listing category, pathname would change.
-      // If pathname changes (e.g. /wdlist/518 -> /wdlist/519), we SHOULD reset.
+      // 다른 페이지에서 목록 페이지로 이동했는지 확인 (예: 상세 페이지에서 목록으로)
+      // 이 경우, 단순히 뒤로 가기한 것이라면 초기화하지 않음.
+      // 하지만 다른 목록 카테고리에서 왔다면 경로명이 변경됨.
+      // 경로명이 변경되면 (예: /wdlist/518 -> /wdlist/519) 초기화해야 함.
       if (currentUrl.pathname !== previousUrl.pathname) {
         shouldReset = true;
       }
     }
 
-    // Ensure drawer is initialized and visible
+    // 드로어가 초기화되고 표시되는지 확인
     if (!JobScanner.isDrawerInitialized) {
       await JobScanner.init(true);
     } else {
@@ -104,23 +104,23 @@ const handlePageTransition = async (previousUrlString) => {
     if (shouldReset) {
       JobScanner.reset();
       DrawerManager.clear();
-      // Do NOT scan immediately. Wait for MutationObserver to detect new content.
-      // Scanning now might process old DOM elements before they are removed.
+      // 즉시 스캔하지 않음. MutationObserver가 새 콘텐츠를 감지할 때까지 대기.
+      // 지금 스캔하면 제거되기 전의 이전 DOM 요소를 처리할 수 있음.
     } else {
-      // Trigger scan if not resetting (e.g. initial load or simple navigation)
+      // 초기화하지 않는 경우 스캔 트리거 (예: 초기 로드 또는 단순 탐색)
       JobScanner.scanVisibleCompanies();
     }
 
   } else if (isDetailPage) {
-    // Ensure drawer is initialized (but hidden)
+    // 드로어 초기화 확인 (숨김 상태)
     if (!JobScanner.isDrawerInitialized) {
       await JobScanner.init(false);
-      DrawerManager.hideFull(); // Explicitly hide everything after init
+      DrawerManager.hideFull(); // 초기화 후 명시적으로 모두 숨김
     } else {
       DrawerManager.hideFull();
     }
 
-    // Fetch info for the new company
+    // 새 회사 정보 가져오기
     await DetailManager.fetchAndRender();
   }
 };
@@ -137,9 +137,9 @@ const observeUrlChanges = () => {
 };
 
 (async () => {
-  // Initial check
+  // 초기 확인
   await handlePageTransition();
 
-  // Start observing
+  // 관찰 시작
   observeUrlChanges();
 })();

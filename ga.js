@@ -20,20 +20,20 @@ class Analytics {
     }
 
     async getOrCreateSessionId() {
-        // Use storage.session if available (Chrome 102+), otherwise fallback to local
-        // For MV3 service workers, storage.session is best for session data
-        // But to keep it simple and persistent across service worker restarts (which happen frequently),
-        // we can use local storage with a timestamp.
+        // storage.session을 사용할 수 있는 경우 사용(Chrome 102+), 그렇지 않으면 로컬로 대체
+        // MV3 서비스 워커의 경우 storage.session이 세션 데이터에 가장 적합함
+        // 하지만 서비스 워커 재시작(자주 발생함) 간에 간단하고 지속적으로 유지하기 위해,
+        // 타임스탬프와 함께 로컬 스토리지를 사용할 수 있음.
 
         let sessionData = await chrome.storage.local.get('sessionData');
         const now = Date.now();
         let { sessionId, lastEventTime } = sessionData.sessionData || {};
 
         if (sessionId && lastEventTime && (now - lastEventTime) < SESSION_EXPIRATION_IN_MIN * 60 * 1000) {
-            // Extend session
+            // 세션 연장
             lastEventTime = now;
         } else {
-            // New session
+            // 새 세션
             sessionId = now.toString();
             lastEventTime = now;
         }

@@ -57,18 +57,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     fetch(url)
       .then((res) => res.text())
       .then((html) => {
-        // Parse HTML to find __NEXT_DATA__
-        // Use a flexible regex to match the script tag regardless of attribute order
+        // __NEXT_DATA__를 찾기 위해 HTML 파싱
+        // 속성 순서에 상관없이 스크립트 태그와 일치하도록 유연한 정규식 사용
         const regex = /<script[^>]*id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/;
         const match = html.match(regex);
 
         if (match && match[1]) {
           try {
             const nextData = JSON.parse(match[1]);
-            // Traverse to find regNoHash
-            // Path: props.pageProps.dehydrateState.queries[].state.data.regNoHash
-            // Since queries is an array, we might need to find the one with the data we want.
-            // Usually it's the first one or we can search for it.
+            // regNoHash 찾기 위해 순회
+            // 경로: props.pageProps.dehydrateState.queries[].state.data.regNoHash
+            // queries가 배열이므로 원하는 데이터가 있는 항목을 찾아야 할 수 있음.
+            // 보통 첫 번째 항목이거나 검색 가능.
 
             let regNoHash = null;
             const queries = nextData?.props?.pageProps?.dehydrateState?.queries || [];
@@ -102,7 +102,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ success: false, error: err.message });
       });
 
-    return true; // Async response
+    return true; // 비동기 응답
   }
 
   if (message.type === 'FETCH_FINANCIAL_REPORT') {
@@ -119,6 +119,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ success: false, error: err.message });
       });
 
-    return true; // Async response
+    return true; // 비동기 응답
   }
 });

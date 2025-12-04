@@ -78,7 +78,7 @@ const DrawerManager = {
     this.chartVisible = false;
     this.chartUpdateInterval = null;
 
-    // Attach event listeners
+    // 이벤트 리스너 첨부
     this.drawer.querySelector('#sort-by-name').onclick = () => this.sortItems('name');
     this.drawer.querySelector('#sort-by-rating').onclick = () => this.sortItems('rating');
     this.drawer.querySelector('#sort-by-netincome').onclick = () => this.sortItems('netIncome');
@@ -90,12 +90,12 @@ const DrawerManager = {
       this.updateButtonAndStatusDisplay();
     };
 
-    // Apply margin-left to buttons
+    // 버튼에 왼쪽 여백 적용
     this.drawer.querySelectorAll('button').forEach(btn => btn.style.marginLeft = '5px');
 
     this.createOpenButton();
 
-    // Initialize chart (but don't show it)
+    // 차트 초기화 (표시는 하지 않음)
     this.initializeChart();
 
     chrome.runtime.sendMessage({
@@ -175,11 +175,11 @@ const DrawerManager = {
   },
 
   addItem: function (companyName, companyId, jobInfo) {
-    // Check if company already exists
+    // 회사가 이미 존재하는지 확인
     const existingItem = this.items.find(it => it.name === companyName);
 
     if (existingItem) {
-      // Add job if new
+      // 새로운 공고인 경우 추가
       if (jobInfo && !existingItem.jobs.some(j => j.link === jobInfo.link)) {
         existingItem.jobs.push(jobInfo);
         this.renderJob(existingItem.element.querySelector('.drawer-item-jobs'), jobInfo);
@@ -217,9 +217,9 @@ const DrawerManager = {
       </div>
   `;
     this.list.insertAdjacentHTML('beforeend', itemHtml);
-    const newRow = this.list.lastElementChild; // Get the newly added row container
+    const newRow = this.list.lastElementChild; // 새로 추가된 행 컨테이너 가져오기
 
-    // Add toggle listener
+    // 토글 리스너 추가
     const toggleBtn = newRow.querySelector('.drawer-item-toggle');
     const jobsDiv = newRow.querySelector('.drawer-item-jobs');
     toggleBtn.onclick = () => {
@@ -228,33 +228,33 @@ const DrawerManager = {
       toggleBtn.textContent = isHidden ? '▼' : '▷';
     };
 
-    // Add click listener to review cell (icon)
+    // 리뷰 셀(아이콘)에 클릭 리스너 추가
     const reviewCell = newRow.querySelector('.drawer-item-review');
     reviewCell.onclick = () => window.open(`https://www.teamblind.com/kr/company/${encodeURIComponent(extractCompanyName(companyName))}/reviews`, '_blank');
 
-    // Add click listener to company name (Scroll to card)
+    // 회사명에 클릭 리스너 추가 (카드로 스크롤)
     const companyNameCell = newRow.querySelector('.drawer-item-companyname');
-    let focusIndex = 0; // Track which card to focus next
+    let focusIndex = 0; // 다음에 포커스할 카드 추적
 
     companyNameCell.onclick = () => {
       const buttons = document.querySelectorAll(`[data-cy="job-card"] button[data-company-name="${companyName}"]`);
       if (buttons.length > 0) {
-        // Wrap around if index is out of bounds (e.g. list changed)
+        // 인덱스가 범위를 벗어나면 처음으로 돌아감 (예: 목록 변경)
         if (focusIndex >= buttons.length) focusIndex = 0;
 
         const card = buttons[focusIndex].closest('[data-cy="job-card"]');
         if (card) {
           card.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-          // Clear existing timeout and reset if already animating
+          // 기존 타임아웃 지우고 이미 애니메이션 중이면 초기화
           if (card._highlightTimer) {
             clearTimeout(card._highlightTimer);
             card.style.transition = 'none';
             card.style.boxShadow = card._originalStyles.boxShadow;
             card.style.transform = card._originalStyles.transform;
-            void card.offsetWidth; // Force reflow
+            void card.offsetWidth; // 리플로우 강제
           } else {
-            // Capture original styles
+            // 원래 스타일 캡처
             card._originalStyles = {
               boxShadow: card.style.boxShadow,
               transform: card.style.transform,
@@ -262,7 +262,7 @@ const DrawerManager = {
             };
           }
 
-          // Apply highlight
+          // 강조 효과 적용
           card.style.transition = 'all 0.5s ease';
           card.style.boxShadow = 'inset 0 0 0 4px rgba(0, 119, 204, 0.5)';
           card.style.borderRadius = '12px';
@@ -273,9 +273,9 @@ const DrawerManager = {
               card.style.boxShadow = card._originalStyles.boxShadow;
               card.style.transform = card._originalStyles.transform;
 
-              // Wait for transition to finish before clearing transition property
+              // 전환 속성을 지우기 전에 전환이 완료될 때까지 대기
               setTimeout(() => {
-                // Only clear if no new animation started
+                // 새 애니메이션이 시작되지 않은 경우에만 지우기
                 if (!card._highlightTimer) {
                   card.style.transition = card._originalStyles.transition;
                   delete card._originalStyles;
@@ -286,14 +286,14 @@ const DrawerManager = {
           }, 1500);
         }
 
-        // Increment for next click
+        // 다음 클릭을 위해 증가
         focusIndex = (focusIndex + 1) % buttons.length;
       } else {
         alert('현재 화면에서 해당 회사의 공고를 찾을 수 없습니다.');
       }
     };
 
-    // Add click listener to financial cell (Open Wanted Detail)
+    // 재무 셀에 클릭 리스너 추가 (원티드 상세 페이지 열기)
     const financialCell = newRow.querySelector('.drawer-item-financial');
     if (companyId) {
       financialCell.onclick = () => window.open(`https://www.wanted.co.kr/company/${companyId}`, '_blank');
@@ -304,7 +304,7 @@ const DrawerManager = {
 
     this.items.push({ name: companyName, rating: null, financial: null, jobs: [], element: newRow });
 
-    // Add initial job
+    // 초기 공고 추가
     if (jobInfo) {
       const item = this.items[this.items.length - 1];
       item.jobs.push(jobInfo);
@@ -354,11 +354,11 @@ const DrawerManager = {
       opCell.textContent = this.formatMoney(operatingIncome);
       netCell.textContent = this.formatMoney(netIncome);
 
-      let bgColor = '#f5f5f5'; // Default Gray
+      let bgColor = '#f5f5f5'; // 기본 회색
       if (netIncome > 0) {
-        bgColor = 'rgb(158 237 184)'; // Green
+        bgColor = 'rgb(158 237 184)'; // 초록색
       } else if (operatingIncome < 0 && netIncome < 0) {
-        bgColor = '#ffccc7'; // Red (light red for background)
+        bgColor = '#ffccc7'; // 빨간색 (배경은 연한 빨간색)
       }
       finaceCell.style.backgroundColor = bgColor;
 
@@ -371,14 +371,14 @@ const DrawerManager = {
     const ratingHeader = this.drawer.querySelector('#sort-by-rating');
     const netIncomeHeader = this.drawer.querySelector('#sort-by-netincome');
 
-    // Reset all headers
+    // 모든 헤더 초기화
     nameHeader.textContent = '회사명';
     ratingHeader.textContent = '평점';
     netIncomeHeader.textContent = '순익';
 
     if (!this.sortState.key) return;
 
-    // Determine which header to update
+    // 업데이트할 헤더 결정
     let targetHeader;
     if (this.sortState.key === 'name') {
       targetHeader = nameHeader;
@@ -413,32 +413,32 @@ const DrawerManager = {
     });
 
     if (this.chartVisible) {
-      // Show chart
+      // 차트 표시
       this.chartContainer.style.display = 'block';
       this.list.style.flex = '1 1 auto';
       toggleBtn.textContent = '차트 숨기기';
       toggleBtn.title = '차트 숨기기';
 
-      // Update chart immediately and start interval
+      // 차트 즉시 업데이트 및 간격 시작
       this.updateChart();
       this.startChartUpdates();
     } else {
-      // Hide chart
+      // 차트 숨기기
       this.chartContainer.style.display = 'none';
       this.list.style.flex = '1 1 auto';
       toggleBtn.textContent = '차트 보기';
       toggleBtn.title = '차트 보기';
 
-      // Stop interval updates
+      // 간격 업데이트 중지
       this.stopChartUpdates();
     }
   },
 
   startChartUpdates: function () {
-    // Clear any existing interval
+    // 기존 간격 지우기
     this.stopChartUpdates();
 
-    // Update chart every 1 second
+    // 1초마다 차트 업데이트
     this.chartUpdateInterval = setInterval(() => {
       if (this.chartVisible) {
         this.updateChart();

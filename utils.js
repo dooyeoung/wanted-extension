@@ -8,7 +8,7 @@ function extractCompanyName(text) {
 
     const nameDict = {
         "쿠팡": "COUPANG",
-        // Add more mappings here if needed
+        // 필요한 경우 여기에 매핑 추가
         "씨제이이엔엠": "CJ ENM",
         "씨제이올리브영": "CJ올리브영",
         "무신사페이먼츠": "무신사",
@@ -17,6 +17,7 @@ function extractCompanyName(text) {
         "클래스101": "class101",
         "소크라에이아이": "뤼이드",
         "케이티밀리의서재": "밀리의서재",
+        "매스프레소": "매스프레소(콴다)",
 
     };
 

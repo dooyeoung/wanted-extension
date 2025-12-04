@@ -1,4 +1,4 @@
-// --- Chart Visualization Module ---
+// --- 차트 시각화 모듈 ---
 const ChartManager = {
     chartInstance: null,
     chartJsLoaded: false,
@@ -15,7 +15,7 @@ const ChartManager = {
     },
 
     createScatterPlot: function (items, canvasId) {
-        // Prepare data: filter items with both rating and financial data
+        // 데이터 준비: 평점과 재무 데이터가 모두 있는 항목 필터링
         const data = items
             .filter(item => {
                 const hasRating = item.rating && item.rating >= 0;
@@ -24,9 +24,9 @@ const ChartManager = {
             })
             .map(item => {
                 const rating = parseFloat(item.rating);
-                const netIncome = item.financial.netIncome / 100000000; // Convert to 억
+                const netIncome = item.financial.netIncome / 100000000; // 억 단위로 변환
 
-                // Green for rating >= 3.5 AND netIncome > 0, blue otherwise
+                // 평점 3.5 이상이고 순이익 > 0이면 초록색, 그렇지 않으면 파란색
                 const isGoodCompany = rating >= 3.5 && item.financial.netIncome > 0;
 
                 return {
@@ -36,7 +36,7 @@ const ChartManager = {
                     companyId: item.element.querySelector('.drawer-item-companyname')?.onclick ?
                         item.element.querySelector('.drawer-item-companyname').onclick.toString().match(/company\/(\d+)/)?.[1] : null,
                     salesAmount: item.financial.salesAmount || 0,
-                    backgroundColor: isGoodCompany ? 'rgba(76, 175, 80, 0.6)' : 'rgba(54, 162, 235, 0.6)', // Green or Blue
+                    backgroundColor: isGoodCompany ? 'rgba(76, 175, 80, 0.6)' : 'rgba(54, 162, 235, 0.6)', // 초록색 또는 파란색
                     borderColor: isGoodCompany ? 'rgba(76, 175, 80, 1)' : 'rgba(54, 162, 235, 1)'
                 };
             });
@@ -52,16 +52,15 @@ const ChartManager = {
             return;
         }
 
-        // If chart exists, just update the data
         if (this.chartInstance) {
             this.chartInstance.data.datasets[0].data = data;
-            this.chartInstance.update('none'); // 'none' mode = no animation
+            this.chartInstance.update('none'); // 'none' 모드 = 애니메이션 없음
             return;
         }
 
         const ctx = canvas.getContext('2d');
 
-        // Create scatter plot (first time only)
+        // 산점도 생성 (최초 1회)
         this.chartInstance = new Chart(ctx, {
             type: 'scatter',
             data: {
@@ -82,7 +81,7 @@ const ChartManager = {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                animation: false, // Disable animations for real-time updates
+                animation: false, // 실시간 업데이트를 위해 애니메이션 비활성화
                 plugins: {
                     tooltip: {
                         callbacks: {
@@ -148,7 +147,7 @@ const ChartManager = {
                         ticks: {
                             stepSize: 0.5,
                             callback: function (value) {
-                                // Hide 5.5 label
+                                // 5.5 라벨 숨기기
                                 if (value === 5.5) return '';
                                 return value.toFixed(1);
                             }
