@@ -10,6 +10,9 @@ function extractCompanyName(text) {
         "씨제이이엔엠(CJ ENM)": "CJ ENM",
         "씨제이올리브영(CJ올리브영)": "CJ올리브영",
         "무신사페이먼츠": "무신사",
+        "당근서비스": "당근마켓",
+        "넥슨코리아": "넥슨",
+
     };
 
     if (nameDict[text]) {

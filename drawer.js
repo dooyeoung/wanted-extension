@@ -194,7 +194,7 @@ const DrawerManager = {
           <div style="display: flex; flex: 1; align-items: center; font-size: 0.9em;">
             <div class="drawer-item-review" style="text-align: center; cursor: pointer;">
               <img src="https://static.teamblind.com/img/www/favicon.ico" width="14" height="14" style="vertical-align: middle; margin-right: 4px;" title="블라인드 리뷰 보기">
-              <span class="drawer-item-rating" style="text-align: center;">대기 중...</span>
+              <span class="drawer-item-rating" style="text-align: center;">...</span>
             </div>
           </div>
 
