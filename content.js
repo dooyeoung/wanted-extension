@@ -251,7 +251,15 @@ const JobScanner = {
         this.totalCompanies++;
         newFound = true;
 
-        DrawerManager.addItem(name, id);
+        // Extract Job Title and Link
+        const linkElement = button.closest('a');
+        const jobTitle = button.getAttribute('data-position-name');
+        const jobLink = linkElement ? linkElement.href : '#';
+        const jobLocation = linkElement.querySelector('span[class*="location"]')?.textContent.trim().split('·')
+          .map(v => v.trim())
+          .pop();
+
+        DrawerManager.addItem(name, id, { title: jobTitle, link: jobLink, location: jobLocation });
 
         if (this.ratingsCache[name]) {
           // Check if expired
@@ -281,6 +289,16 @@ const JobScanner = {
             UIManager.injectRating(container, 'LOADING', name);
           }
         }
+      }
+      else {
+        const linkElement = button.closest('a');
+        const jobTitle = button.getAttribute('data-position-name');
+        const jobLink = linkElement ? linkElement.href : '#';
+        const jobLocation = linkElement.querySelector('span[class*="location"]')?.textContent.trim().split('·')
+          .map(v => v.trim())
+          .pop();
+
+        DrawerManager.addItem(name, id, { title: jobTitle, link: jobLink, location: jobLocation });
       }
 
       // 2. Injection: Always try to inject if cached (handles multiple cards/re-renders)

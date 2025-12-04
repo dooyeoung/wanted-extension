@@ -39,7 +39,7 @@ const DrawerManager = {
         border-left: 1px solid #e0e0e0; box-shadow: -2px 0 5px rgba(0,0,0,0.1); z-index: 9999; 
         display: flex; flex-direction: column; padding: 10px; box-sizing: border-box;"
       >
-        <div style="flex-shrink: 0; height: 60px;">
+        <div style="flex-shrink: 0;">
           <div style="display: flex; justify-content: space-between;">
             <span style="flex: 1;" id="blind-rating-status"></span>
             <div>
@@ -168,30 +168,71 @@ const DrawerManager = {
     return amount.toLocaleString();
   },
 
-  addItem: function (companyName, companyId) {
+  addItem: function (companyName, companyId, jobInfo) {
+    // Check if company already exists
+    const existingItem = this.items.find(it => it.name === companyName);
+
+    if (companyName == "빗썸") {
+
+      console.log(companyName, companyId, jobInfo)
+      console.log(existingItem);
+    }
+    if (existingItem) {
+      // Add job if new
+      if (jobInfo && !existingItem.jobs.some(j => j.link === jobInfo.link)) {
+        existingItem.jobs.push(jobInfo);
+        this.renderJob(existingItem.element.querySelector('.drawer-item-jobs'), jobInfo);
+      }
+      return;
+    }
+
     const itemHtml = `
-      <div class="drawer-item-row" style="display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 0.9em;">
-        <div class="drawer-item-name" style="flex: 3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; text-decoration: underline;" title="원티드 상세 페이지 이동">${companyName}</div>
-        <div style="display: flex; flex: 1; align-items: center;">
-          <div class="drawer-item-review" style="text-align: center; cursor: pointer;">
-            <img src="https://static.teamblind.com/img/www/favicon.ico" width="14" height="14" style="vertical-align: middle; margin-right: 4px;" title="블라인드 리뷰 보기">
-            <span class="drawer-item-rating" style="text-align: center;">대기 중...</span>
+      <div class="drawer-item-row" style="display: flex; flex-direction: column; border-bottom: 1px solid #eee;">
+        <div style="display: flex; align-items: center;">
+          
+          <div class="drawer-item-toggle" style="text-align: center; cursor: pointer;">▷</div>
+          <div class="drawer-item-name" 
+            style="flex: 3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 8px;" >
+            ${companyName}
           </div>
+
+          <div style="display: flex; flex: 1; align-items: center;">
+            <div class="drawer-item-review" style="text-align: center; cursor: pointer;">
+              <img src="https://static.teamblind.com/img/www/favicon.ico" width="14" height="14" style="vertical-align: middle; margin-right: 4px;" title="블라인드 리뷰 보기">
+              <span class="drawer-item-rating" style="text-align: center;">대기 중...</span>
+            </div>
+          </div>
+
+          <div class="drawer-item-financial" 
+            style="display: flex; flex: 3; align-items: center; cursor: pointer; padding: 8px" title="원티드 상세 페이지 이동">
+            <div class="drawer-item-sales" style="flex: 1; text-align: center;">-</div>
+            <div class="drawer-item-op" style="flex: 1; text-align: center;">-</div>
+            <div class="drawer-item-net" style="flex: 1; text-align: center;">-</div>
+          </div>
+
         </div>
-        <div class="drawer-item-sales" style="flex: 1; text-align: center;">-</div>
-        <div class="drawer-item-op" style="flex: 1; text-align: center;">-</div>
-        <div class="drawer-item-net" style="flex: 1; text-align: center;">-</div>
+
+        <div class="drawer-item-jobs" style="padding: 0px 0px 8px 8px; display: none;"></div>
       </div>
-    `;
+  `;
     this.list.insertAdjacentHTML('beforeend', itemHtml);
-    const newRow = this.list.lastElementChild; // Get the newly added row
+    const newRow = this.list.lastElementChild; // Get the newly added row container
+
+    // Add toggle listener
+    const toggleBtn = newRow.querySelector('.drawer-item-toggle');
+    const jobsDiv = newRow.querySelector('.drawer-item-jobs');
+    toggleBtn.onclick = () => {
+      const isHidden = jobsDiv.style.display === 'none';
+      jobsDiv.style.display = isHidden ? 'block' : 'none';
+      toggleBtn.textContent = isHidden ? '▼' : '▷';
+    };
 
     // Add click listener to review cell (icon)
     const reviewCell = newRow.querySelector('.drawer-item-review');
     reviewCell.onclick = () => window.open(`https://www.teamblind.com/kr/company/${encodeURIComponent(extractCompanyName(companyName))}/reviews`, '_blank');
 
     // Add click listener to name cell
-    const nameCell = newRow.querySelector('.drawer-item-name');
+    const nameCell = newRow.querySelector('.drawer-item-financial');
     if (companyId) {
       nameCell.onclick = () => window.open(`https://www.wanted.co.kr/company/${companyId}`, '_blank');
     } else {
@@ -200,7 +241,26 @@ const DrawerManager = {
       nameCell.title = '';
     }
 
-    this.items.push({ name: companyName, rating: null, financial: null, element: newRow });
+    this.items.push({ name: companyName, rating: null, financial: null, jobs: [], element: newRow });
+
+    // Add initial job
+    if (jobInfo) {
+      const item = this.items[this.items.length - 1];
+      item.jobs.push(jobInfo);
+      this.renderJob(newRow.querySelector('.drawer-item-jobs'), jobInfo);
+    }
+  },
+
+  renderJob: function (container, job) {
+    const jobHtml = `
+      <div title="채용 공고 페이지 이동">
+        <a href="${job.link}" target="_blank" 
+        style="text-decoration: none; color: #787878; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+          • ${job.title} (${job.location})
+        </a>
+      </div>
+    `;
+    container.insertAdjacentHTML('beforeend', jobHtml);
   },
 
   updateItem: function (companyName, rating, financial) {
@@ -210,7 +270,9 @@ const DrawerManager = {
     if (rating !== undefined) item.rating = rating;
     if (financial !== undefined) item.financial = financial;
 
+    console.log(item);
     const ratingCell = item.element.querySelector('.drawer-item-rating');
+    const finaceCell = item.element.querySelector('.drawer-item-financial');
     const salesCell = item.element.querySelector('.drawer-item-sales');
     const opCell = item.element.querySelector('.drawer-item-op');
     const netCell = item.element.querySelector('.drawer-item-net');
@@ -232,20 +294,13 @@ const DrawerManager = {
       opCell.textContent = this.formatMoney(operatingIncome);
       netCell.textContent = this.formatMoney(netIncome);
 
-      // Reset colors first
-      salesCell.style.color = '';
-      opCell.style.color = '';
-      netCell.style.color = '';
-
-      const cells = [salesCell, opCell, netCell];
-
       let bgColor = '#f5f5f5'; // Default Gray
       if (netIncome > 0) {
         bgColor = 'rgb(158 237 184)'; // Green
       } else if (operatingIncome < 0 && netIncome < 0) {
         bgColor = '#ffccc7'; // Red (light red for background)
       }
-      cells.forEach(cell => cell.style.backgroundColor = bgColor);
+      finaceCell.style.backgroundColor = bgColor;
 
     }
   },
