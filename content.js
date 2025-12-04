@@ -96,7 +96,7 @@ const JobScanner = {
     try {
       const processRating = (rating) => {
         DrawerManager.updateItem(name, rating);
-        if (rating !== '-') {
+        if (rating >= 0) {
           // Get financial data from cache if available
           let financial = undefined;
           if (this.ratingsCache[name] && typeof this.ratingsCache[name] === 'object') {
@@ -110,7 +110,6 @@ const JobScanner = {
             }
           });
         } else {
-          // Also inject if rating is '-' to clear LOADING state
           document.querySelectorAll(`[data-cy="job-card"] button[data-company-name="${name}"]`).forEach(button => {
             const container = button.closest('[data-cy="job-card"]');
             if (container) {
@@ -130,7 +129,7 @@ const JobScanner = {
             if (response && response.success) {
 
               // Update cache with hash
-              if (!this.ratingsCache[name]) this.ratingsCache[name] = { rating: '-' };
+              if (!this.ratingsCache[name]) this.ratingsCache[name] = { rating: 0 };
               // Handle legacy string cache
               if (typeof this.ratingsCache[name] !== 'object') this.ratingsCache[name] = { rating: this.ratingsCache[name] };
 
@@ -189,7 +188,7 @@ const JobScanner = {
         }
       }
 
-      if (cachedRating && cachedRating !== '-') {
+      if (cachedRating && cachedRating >= 0) {
         processRating(cachedRating);
         if (cachedFinancial) DrawerManager.updateItem(name, undefined, cachedFinancial);
       } else {
@@ -201,7 +200,7 @@ const JobScanner = {
         const { rating } = result;
 
         // Update cache with rating, preserving hash if exists
-        if (!this.ratingsCache[name]) this.ratingsCache[name] = { rating: '-' };
+        if (!this.ratingsCache[name]) this.ratingsCache[name] = { rating: 0 };
         if (typeof this.ratingsCache[name] !== 'object') this.ratingsCache[name] = { rating: this.ratingsCache[name] };
 
         this.ratingsCache[name].rating = rating;
@@ -260,7 +259,7 @@ const JobScanner = {
 
         DrawerManager.addItem(name, id, { title: jobTitle, link: jobLink, location: jobLocation });
 
-        if (this.ratingsCache[name]) {
+        if (this.ratingsCache[name] && this.ratingsCache[name].rating >= 0) {
           // Check if expired
           const cached = this.ratingsCache[name];
           let isExpired = false;
@@ -325,7 +324,7 @@ const JobScanner = {
         // Only inject if valid rating and NOT expired (if expired, rating will be object or we handled it)
         // If expired, rating variable is still the object.
 
-        if (typeof rating !== 'object') { // Simple check: if it became a value (including '-')
+        if (typeof rating !== 'object') {
           UIManager.injectRating(container, rating, name, financial);
           DrawerManager.updateItem(name, rating, financial);
         }

@@ -3,10 +3,11 @@ const BlindAPI = {
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
     const el = doc.querySelector('span.star');
-    if (!el) return null;
+    if (!el) return 0;
     const match = el.textContent.match(/\d+(\.\d+)?/);
-    return match ? match[0] : null;
+    return match ? parseFloat(match[0]) : 0;
   },
+
   fetchReview: function (companyName) {
     return new Promise((resolve) => {
       chrome.runtime.sendMessage(
@@ -14,10 +15,21 @@ const BlindAPI = {
         (response) => {
           if (response?.success && response.html) {
             const rating = this.parseRating(response.html);
-            resolve({ rating: rating || '-' });
+            resolve({ rating: rating });
           } else {
-            console.error(`Failed to fetch for ${companyName}:`, response?.error || 'Unknown error');
-            resolve({ rating: '-' });
+
+            if (response?.errorType === 'forbidden') {
+              console.error(`Failed to fetch for ${companyName}:`, response?.error || 'forbidden error', response.status);
+              resolve({ rating: -3 });
+            }
+            else if (response?.errorType === 'notfound') {
+              console.error(`Failed to fetch for ${companyName}:`, response?.error || 'notfound error', response.status);
+              resolve({ rating: -2 });
+            }
+            else {
+              console.error(`Failed to fetch for ${companyName}:`, response?.error || 'Unknown error');
+              resolve({ rating: -1 });
+            }
           }
         }
       );

@@ -48,7 +48,7 @@ const UIManager = {
       let displayRating = rating;
       let fontWeight = '400';
 
-      if (rating !== '-') {
+      if (rating >= 0) {
         const parsedRating = parseFloat(rating);
         if (!isNaN(parsedRating)) {
           displayRating = parsedRating;
@@ -79,7 +79,7 @@ const UIManager = {
           <span style="color: #333; font-size: 14px;">블라인드 평점</span>
         </div>
         <div style="display: flex; align-items: center;">
-          <span style="font-size: 16px; font-weight: ${fontWeight}; margin-right: 5px;">${displayRating}</span>
+          <span style="font-size: 16px; font-weight: ${fontWeight}; margin-right: 5px;" data-rating="${rating}">${displayRating}</span>
         </div>
       </div>
       `;

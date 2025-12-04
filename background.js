@@ -21,19 +21,31 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     fetch(url)
       .then((res) => {
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
+        if (res.ok) {
+          return res.text();
         }
-        return res.text();
+        const error = new Error(`HTTP error`);
+        error.status = res.status;
+        throw error;
       })
       .then((html) => {
         console.log(`[BACKGROUND] Fetched HTML for ${url} ${message.company}. HTML content (first 500 chars):`, html.substring(0, 500));
         sendResponse({ success: true, html });
       })
       .catch((err) => {
-        console.error('[BACKGROUND] fetch error', err);
-        sendResponse({ success: false, error: err.message });
-      });
+        if (err.status === 403) {
+          console.error('[BACKGROUND] Forbidden error', err.status);
+          sendResponse({ success: false, errorType: 'forbidden', status: err.status });
+        }
+        else if (err.status === 404) {
+          console.error('[BACKGROUND] Not Found error', err.status);
+          sendResponse({ success: false, errorType: 'notfound', status: err.status });
+        }
+        else {
+          console.error('[BACKGROUND] Network error', err);
+          sendResponse({ success: false, errorType: 'network', error: err.message });
+        }
+      })
 
     return true; // 비동기 응답 허용
   }

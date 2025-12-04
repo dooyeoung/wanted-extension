@@ -18,7 +18,7 @@ const ChartManager = {
         // Prepare data: filter items with both rating and financial data
         const data = items
             .filter(item => {
-                const hasRating = item.rating && item.rating !== '-';
+                const hasRating = item.rating && item.rating >= 0;
                 const hasFinancial = item.financial && item.financial.netIncome !== undefined;
                 return hasRating && hasFinancial;
             })

@@ -182,7 +182,7 @@ const DrawerManager = {
     }
 
     const itemHtml = `
-      <div class="drawer-item-row" style="display: flex; flex-direction: column; border-bottom: 1px solid #eee;">
+      <div class="drawer-item-row" drawer-companyname="${companyName}" style="display: flex; flex-direction: column; border-bottom: 1px solid #eee;">
         <div style="display: flex; align-items: center;">
           
           <div class="drawer-item-toggle" style="text-align: center; cursor: pointer; font-size: 0.7em;">▷</div>
@@ -333,12 +333,12 @@ const DrawerManager = {
 
     // updateItem에서는 평점 셀만 업데이트
     if (rating !== undefined) {
-      if (rating !== '-') {
+      if (rating >= 0) {
         const parsedrating = parseFloat(rating);
         const fontWeight = parsedrating >= 4 ? '700' : '400';
-        ratingCell.innerHTML = `<span style="font-size:14px; font-weight: ${fontWeight}">${parsedrating}</span>`;
+        ratingCell.innerHTML = `<span style="font-size:14px; font-weight: ${fontWeight}" data-rating="${rating}">${parsedrating}</span>`;
       } else {
-        ratingCell.innerHTML = '-';
+        ratingCell.innerHTML = `<span style="font-size:14px;" data-rating="${rating}">-</span>`;
       }
     }
 
